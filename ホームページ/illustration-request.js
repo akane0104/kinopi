@@ -128,9 +128,11 @@ function renderQuestion(q) {
   if (q.type === 'textarea') {
     inputHtml = `<textarea id="${bodyId}" name="${q.id}" rows="4" ${q.required ? 'required' : ''}></textarea>`;
   } else if (q.type === 'single_choice') {
-    inputHtml = `<div class="ireq-choice-group" role="radiogroup">${(q.options || []).map((opt, oi) => `<label class="ireq-choice"><input type="radio" name="${q.id}" value="${escapeHtml(opt)}" ${q.required ? 'required' : ''} /><span>${escapeHtml(opt)}</span></label>`).join('')}</div>`;
+    const hasOther = (q.options || []).some((opt) => opt.trim() === 'その他');
+    inputHtml = `<div class="ireq-choice-group" role="radiogroup">${(q.options || []).map((opt, oi) => `<label class="ireq-choice"><input type="radio" name="${q.id}" value="${escapeHtml(opt)}" ${opt.trim() === 'その他' ? `data-other-toggle="${q.id}"` : ''} ${q.required ? 'required' : ''} /><span>${escapeHtml(opt)}</span></label>`).join('')}</div>${hasOther ? `<input type="text" class="ireq-other-input" id="other-${q.id}" data-other-for="${q.id}" placeholder="具体的にご記入ください" hidden />` : ''}`;
   } else if (q.type === 'multi_choice') {
-    inputHtml = `<div class="ireq-choice-group">${(q.options || []).map((opt, oi) => `<label class="ireq-choice"><input type="checkbox" name="${q.id}" value="${escapeHtml(opt)}" data-multi="${q.id}" /><span>${escapeHtml(opt)}</span></label>`).join('')}</div>`;
+    const hasOther = (q.options || []).some((opt) => opt.trim() === 'その他');
+    inputHtml = `<div class="ireq-choice-group">${(q.options || []).map((opt, oi) => `<label class="ireq-choice"><input type="checkbox" name="${q.id}" value="${escapeHtml(opt)}" data-multi="${q.id}" ${opt.trim() === 'その他' ? `data-other-toggle="${q.id}"` : ''} /><span>${escapeHtml(opt)}</span></label>`).join('')}</div>${hasOther ? `<input type="text" class="ireq-other-input" id="other-${q.id}" data-other-for="${q.id}" placeholder="具体的にご記入ください" hidden />` : ''}`;
   } else if (q.type === 'image') {
     inputHtml = `<div class="ireq-image-upload">
       <label class="ireq-image-button" for="${bodyId}">📎 画像を選ぶ（複数可）</label>
@@ -196,14 +198,34 @@ async function handleCodeSubmit(event) {
   await showKindChoice();
 }
 
+function updateOtherFieldVisibility(name) {
+  const otherInput = document.getElementById(`other-${name}`);
+  if (!otherInput) return;
+  const otherToggle = document.querySelector(`[data-other-toggle="${name}"]`);
+  if (!otherToggle) return;
+  otherInput.hidden = !otherToggle.checked;
+  if (!otherToggle.checked) otherInput.value = '';
+}
+
+function otherDetailFor(qid) {
+  const otherInput = document.getElementById(`other-${qid}`);
+  return otherInput && !otherInput.hidden ? otherInput.value.trim() : '';
+}
+
 function collectAnswers(form) {
   const answers = {};
   currentQuestions.forEach((q) => {
     if (q.type === 'multi_choice') {
       const checked = [...form.querySelectorAll(`[data-multi="${q.id}"]:checked`)].map((el) => el.value);
-      answers[q.label] = checked.join('、');
+      const detail = otherDetailFor(q.id);
+      const withDetail = detail ? checked.map((value) => (value.trim() === 'その他' ? `その他（${detail}）` : value)) : checked;
+      answers[q.label] = withDetail.join('、');
     } else if (q.type === 'image') {
       answers[q.label] = uploadedImages[q.id] || [];
+    } else if (q.type === 'single_choice') {
+      const value = form.elements[q.id]?.value || '';
+      const detail = otherDetailFor(q.id);
+      answers[q.label] = (value.trim() === 'その他' && detail) ? `その他（${detail}）` : value;
     } else {
       answers[q.label] = form.elements[q.id]?.value || '';
     }
@@ -286,7 +308,10 @@ function init() {
   $('#ireq-kind-illust').addEventListener('click', () => openForm('illustration'));
   $('#ireq-kind-parts').addEventListener('click', () => openForm('parts'));
   $('#ireq-kind-back').addEventListener('click', () => { $('#ireq-kind-step').hidden = true; $('#ireq-code-step').hidden = false; });
-  $('#ireq-questions').addEventListener('change', (event) => { if (event.target.matches('[data-image-question]')) handleImageUpload(event.target); });
+  $('#ireq-questions').addEventListener('change', (event) => {
+    if (event.target.matches('[data-image-question]')) handleImageUpload(event.target);
+    if (event.target.matches('[name]') && event.target.type !== 'file') updateOtherFieldVisibility(event.target.name);
+  });
 }
 
 init();

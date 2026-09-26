@@ -135,3 +135,7 @@
 .ireq-image-thumb{width:76px;height:76px;border-radius:10px;overflow:hidden;border:1px solid var(--ireq-border)}
 .ireq-image-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .ireq-image-status{margin:0;font-size:11px;color:var(--ireq-muted)}
+
+/* ===== 追加：「その他」を選んだときの自由記入欄 ===== */
+.ireq-other-input{display:block;width:100%;margin-top:10px;border:1px solid var(--ireq-border);border-radius:12px;padding:12px 14px;font:14px var(--round);color:var(--ireq-ink);background:#fff;outline:0}
+.ireq-other-input:focus{border-color:var(--ireq-rose);box-shadow:0 0 0 3px rgba(217,130,153,.15)}
