@@ -332,6 +332,7 @@ function init() {
   $('#ireq-answer-form').addEventListener('submit', handleAnswerSubmit);
   $('#ireq-kind-choices').addEventListener('click', (event) => { const card = event.target.closest('[data-form-key]'); if (card) openForm(card.dataset.formKey); });
   $('#ireq-kind-back').addEventListener('click', () => { $('#ireq-kind-step').hidden = true; $('#ireq-code-step').hidden = false; });
+  $('#ireq-form-back').addEventListener('click', () => { $('#ireq-form-step').hidden = true; $('#ireq-kind-step').hidden = false; window.scrollTo({ top: 0, behavior: 'smooth' }); });
   $('#ireq-questions').addEventListener('change', (event) => {
     if (event.target.matches('[data-image-question]')) handleImageUpload(event.target);
     if (event.target.matches('[name]') && event.target.type !== 'file') updateOtherFieldVisibility(event.target.name);

@@ -119,6 +119,7 @@
 .ireq-kind-card b{font-size:16px;font-weight:800;color:var(--ireq-ink)}
 .ireq-kind-card span{font-size:12px;color:var(--ireq-muted)}
 .ireq-back-link{display:block;margin:22px auto 0;border:0;background:none;color:var(--ireq-muted);font-size:11px;text-decoration:underline;cursor:pointer}
+#ireq-form-back{margin:0 auto 18px 0;text-align:left}
 
 /* ===== 追加：必須バッジ／選択式の質問 ===== */
 .ireq-required{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:99px;background:var(--ireq-rose-deep);color:#fff;font:700 9px var(--round);vertical-align:middle}
