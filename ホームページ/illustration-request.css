@@ -126,3 +126,12 @@
 .ireq-choice{display:flex;align-items:center;gap:10px;padding:13px 16px;border:1px solid var(--ireq-border);border-radius:12px;cursor:pointer;font-size:13px;color:var(--ireq-ink)}
 .ireq-choice:has(input:checked){border-color:var(--ireq-rose);background:#fdf3f5}
 .ireq-choice input{width:18px;height:18px;accent-color:var(--ireq-rose-deep);flex:0 0 auto}
+
+/* ===== 追加：画像添付 ===== */
+.ireq-image-upload{display:flex;flex-direction:column;gap:12px}
+.ireq-image-button{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;padding:12px 20px;border-radius:12px;border:1px dashed var(--ireq-rose);background:#fff;color:var(--ireq-rose-deep);font:700 13px var(--round);cursor:pointer}
+.ireq-image-button:hover{background:#fdf3f5}
+.ireq-image-previews{display:flex;flex-wrap:wrap;gap:10px}
+.ireq-image-thumb{width:76px;height:76px;border-radius:10px;overflow:hidden;border:1px solid var(--ireq-border)}
+.ireq-image-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.ireq-image-status{margin:0;font-size:11px;color:var(--ireq-muted)}

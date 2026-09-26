@@ -828,7 +828,12 @@ async function renderIllustFormPanel(item) {
   if (error) { box.innerHTML = `<p class="od-hint">まだこの機能は使えません（${error.message.includes('does not exist') ? 'supabase/illustration-request.sql と supabase/parts-request.sql を実行してください' : error.message}）</p>`; return; }
   if (!data || !data.length) { box.innerHTML = '<p class="od-hint">まだ回答が届いていません。</p>'; return; }
   box.innerHTML = data.map((entry) => {
-    const rows = Object.entries(entry.answers || {}).filter(([, value]) => value).map(([label, value]) => `<div class="illustform-row"><b>${escapeHtml(label)}</b><span>${escapeHtml(value).replace(/\n/g, '<br>')}</span></div>`).join('') || '<p class="od-hint">回答内容が空でした。</p>';
+    const rows = Object.entries(entry.answers || {}).filter(([, value]) => value && (!Array.isArray(value) || value.length)).map(([label, value]) => {
+      const content = Array.isArray(value)
+        ? `<div class="illustform-image-row">${value.map((url) => `<a href="${escapeHtml(url)}" target="_blank" rel="noopener"><img src="${escapeHtml(url)}" alt="" /></a>`).join('')}</div>`
+        : escapeHtml(value).replace(/\n/g, '<br>');
+      return `<div class="illustform-row"><b>${escapeHtml(label)}</b><span>${content}</span></div>`;
+    }).join('') || '<p class="od-hint">回答内容が空でした。</p>';
     const kindLabel = entry.form_type === 'parts' ? 'パーツ分け制作' : 'イラスト制作';
     const isUnviewed = entry.viewed !== true;
     const statusBadge = isUnviewed ? '<span class="illustform-status is-new">● 未確認</span>' : '<span class="illustform-status is-done">✓ 確認済み</span>';

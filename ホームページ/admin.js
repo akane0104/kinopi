@@ -199,7 +199,7 @@ function fbEscape(value) {
   return String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 }
 
-const FB_TYPE_LABELS = { text: '一行テキスト', textarea: '複数行テキスト', single_choice: '単一選択（1つだけ選べる）', multi_choice: '複数選択（いくつでも選べる）' };
+const FB_TYPE_LABELS = { text: '一行テキスト', textarea: '複数行テキスト', single_choice: '単一選択（1つだけ選べる）', multi_choice: '複数選択（いくつでも選べる）', image: '画像アップロード' };
 
 function renderFormBuilderBlock(block, index, total) {
   const moveUp = index > 0 ? `<button type="button" data-fb-move="${block.uid}:-1" title="上に移動">↑</button>` : `<button type="button" disabled>↑</button>`;

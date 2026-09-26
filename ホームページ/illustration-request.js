@@ -43,7 +43,8 @@ const DEFAULT_CONFIGS = {
       { type: 'textarea', label: '服装のイメージ', helper: '制服、ゴシック、ストリート、和服、ファンタジー、パーカー、ドレスなど。', required: false },
       { type: 'textarea', label: '時代設定・世界観', helper: '現代、近未来、中国風、江戸時代風、中世ヨーロッパ風、SF、ファンタジー、異世界など。決まっていない場合は「おまかせ」でも大丈夫です。', required: false },
       { type: 'section', title: '参考・こだわり・NG', english: 'REFERENCE & MUST' },
-      { type: 'textarea', label: '近しいキャラクター', helper: '参考にしたいキャラクターがいる場合は、キャラクター名や作品名をご記入ください。名前が分からない場合は、後ほど公式XまたはDiscordから画像をお送りいただけます。', required: false },
+      { type: 'textarea', label: '近しいキャラクター', helper: '参考にしたいキャラクターがいる場合は、キャラクター名や作品名をご記入ください。名前が分からない場合は、下の項目から参考画像をアップロードいただくこともできます。', required: false },
+      { type: 'image', label: '参考画像（あれば）', helper: 'イメージに近い画像やイラストがあれば、アップロードしてください（複数枚OKです）。', required: false },
       { type: 'textarea', label: '絶対に入れてほしい要素', helper: '獣耳、メガネ、ピアス、片目を髪で隠している、傷・ほくろ・タトゥーなど。', required: false },
       { type: 'textarea', label: '絶対に入れてほしくない要素', helper: '避けてほしい髪型・服装・色・アクセサリーなどがあればご記入ください。', required: false },
       { type: 'textarea', label: 'その他の要望', helper: '上記以外に伝えておきたいことがあれば、自由にご記入ください。', required: false },
@@ -57,13 +58,14 @@ const DEFAULT_CONFIGS = {
 
 すでに完成しているイラストを、動かせる形にパーツごとに分けていく工程です。以下の項目にご回答いただくことで、ご希望に沿った可動域や仕上がりにしやすくなります。
 
-イラストデータそのものは、後ほど公式XまたはDiscordからお送りください。`,
+イラストデータは、下の項目からこのままアップロードしてください。`,
     outro: `最後までご回答いただきありがとうございます🙇🏻‍♀️
 
 つきましては、後ほどご回答いただいた内容の確認事項と「パーツ分け」の料金をメッセージにてお送りいたします💬`,
     blocks: [
       { type: 'section', title: '基本情報', english: 'BASIC INFORMATION' },
       { type: 'text', label: 'キャラクターのお名前', helper: '', required: false },
+      { type: 'image', label: 'イラストデータ', helper: 'パーツ分けしたいイラストの画像を、そのままアップロードしてください（複数枚OKです）。', required: false },
       { type: 'single_choice', label: 'ご希望の可動域', helper: '決まっていない場合は「おまかせ」を選んでください。', required: false, options: ['低可動域', '高可動域', 'おまかせ'] },
       { type: 'section', title: 'パーツ分けの詳細', english: 'PARTS DETAIL' },
       { type: 'multi_choice', label: '揺れ物・小物はありますか？', helper: '当てはまるものをすべて選んでください。', required: false, options: ['髪', '衣装（リボン・スカートなど）', 'アクセサリー', '尻尾・耳など', 'その他'] },
@@ -81,6 +83,7 @@ let formConfigs = { illustration: null, parts: null };
 let currentKind = null;
 let currentQuestions = [];
 let currentSerial = '';
+let uploadedImages = {};
 
 async function getFormConfig(kind) {
   if (formConfigs[kind]) return formConfigs[kind];
@@ -128,6 +131,13 @@ function renderQuestion(q) {
     inputHtml = `<div class="ireq-choice-group" role="radiogroup">${(q.options || []).map((opt, oi) => `<label class="ireq-choice"><input type="radio" name="${q.id}" value="${escapeHtml(opt)}" ${q.required ? 'required' : ''} /><span>${escapeHtml(opt)}</span></label>`).join('')}</div>`;
   } else if (q.type === 'multi_choice') {
     inputHtml = `<div class="ireq-choice-group">${(q.options || []).map((opt, oi) => `<label class="ireq-choice"><input type="checkbox" name="${q.id}" value="${escapeHtml(opt)}" data-multi="${q.id}" /><span>${escapeHtml(opt)}</span></label>`).join('')}</div>`;
+  } else if (q.type === 'image') {
+    inputHtml = `<div class="ireq-image-upload">
+      <label class="ireq-image-button" for="${bodyId}">📎 画像を選ぶ（複数可）</label>
+      <input id="${bodyId}" type="file" accept="image/*" multiple data-image-question="${q.id}" hidden />
+      <div class="ireq-image-previews" id="previews-${q.id}"></div>
+      <p class="ireq-image-status" id="status-${q.id}"></p>
+    </div>`;
   } else {
     inputHtml = `<input id="${bodyId}" name="${q.id}" type="text" ${q.required ? 'required' : ''} />`;
   }
@@ -156,6 +166,7 @@ async function showKindChoice() {
 
 async function openForm(kind) {
   currentKind = kind;
+  uploadedImages = {};
   const config = await getFormConfig(kind);
   const sections = blocksToSections(config.blocks);
   currentQuestions = sections.flatMap((section) => section.questions);
@@ -191,6 +202,8 @@ function collectAnswers(form) {
     if (q.type === 'multi_choice') {
       const checked = [...form.querySelectorAll(`[data-multi="${q.id}"]:checked`)].map((el) => el.value);
       answers[q.label] = checked.join('、');
+    } else if (q.type === 'image') {
+      answers[q.label] = uploadedImages[q.id] || [];
     } else {
       answers[q.label] = form.elements[q.id]?.value || '';
     }
@@ -239,12 +252,41 @@ async function handleAnswerSubmit(event) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+/* ===== 追加機能：画像添付のアップロード処理 ===== */
+async function handleImageUpload(input) {
+  const qid = input.dataset.imageQuestion;
+  const previews = document.getElementById(`previews-${qid}`);
+  const status = document.getElementById(`status-${qid}`);
+  const files = [...input.files];
+  if (!files.length) return;
+  if (!uploadedImages[qid]) uploadedImages[qid] = [];
+  status.textContent = `アップロード中…（0/${files.length}）`;
+  let done = 0;
+  for (const file of files) {
+    try {
+      const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '-')}`;
+      const { error } = await db.storage.from('request-attachments').upload(safeName, file, { upsert: false });
+      if (error) throw error;
+      const url = db.storage.from('request-attachments').getPublicUrl(safeName).data.publicUrl;
+      uploadedImages[qid].push(url);
+      previews.insertAdjacentHTML('beforeend', `<span class="ireq-image-thumb"><img src="${url}" alt="" /></span>`);
+    } catch (error) {
+      status.textContent = `一部の画像をアップロードできませんでした：${error.message}`;
+    }
+    done += 1;
+    if (status.textContent.startsWith('アップロード中')) status.textContent = `アップロード中…（${done}/${files.length}）`;
+  }
+  if (status.textContent.startsWith('アップロード中')) status.textContent = `✓ ${uploadedImages[qid].length}枚アップロード済み`;
+  input.value = '';
+}
+
 function init() {
   $('#ireq-code-form').addEventListener('submit', handleCodeSubmit);
   $('#ireq-answer-form').addEventListener('submit', handleAnswerSubmit);
   $('#ireq-kind-illust').addEventListener('click', () => openForm('illustration'));
   $('#ireq-kind-parts').addEventListener('click', () => openForm('parts'));
   $('#ireq-kind-back').addEventListener('click', () => { $('#ireq-kind-step').hidden = true; $('#ireq-code-step').hidden = false; });
+  $('#ireq-questions').addEventListener('change', (event) => { if (event.target.matches('[data-image-question]')) handleImageUpload(event.target); });
 }
 
 init();
