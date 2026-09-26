@@ -551,6 +551,7 @@ function renderList() {
         <div class="inquiry-card-top">
           <div class="inquiry-card-id">
             <span class="serial-tag">${escapeHtml(item.serial)}</span>
+            <button type="button" class="serial-copy-button" data-copy-text="${escapeHtml(item.serial)}" title="コードをコピー">📋</button>
             <span class="order-status-badge ${st.cls}">${st.label}</span>
             ${statusOf(item) === 'pending' ? '<span class="status-badge pending">未返信</span>' : '<span class="status-badge done">返信済み ♡</span>'}
           </div>
@@ -1068,6 +1069,9 @@ document.addEventListener('click', async (event) => {
   if (event.target.closest('#order-file-upload')) { uploadOrderFile(); return; }
   const urlCopyButton = event.target.closest('[data-copy-url]');
   if (urlCopyButton) { copyUrlToClipboard(urlCopyButton.dataset.copyUrl, urlCopyButton); return; }
+  const textCopyButton = event.target.closest('[data-copy-text]');
+  if (textCopyButton) { event.preventDefault(); copyUrlToClipboard(textCopyButton.dataset.copyText, textCopyButton); return; }
+  if (event.target.closest('#od-serial-copy')) { copyUrlToClipboard($('#od-serial').textContent, event.target.closest('#od-serial-copy')); return; }
   const tmplCopy = event.target.closest('[data-tmpl-copy]');
   if (tmplCopy) { const item = currentDetailItem(); if (item) copyTemplate(Number(tmplCopy.dataset.tmplCopy), item, tmplCopy); return; }
   const tmplEdit = event.target.closest('[data-tmpl-edit]');

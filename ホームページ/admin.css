@@ -642,3 +642,8 @@
 .illustform-image-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
 .illustform-image-row img{width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid #f0d7e2;cursor:pointer;transition:transform .15s}
 .illustform-image-row img:hover{transform:scale(1.05)}
+
+/* ===== 追加機能：シリアルナンバーのコピーボタン ===== */
+.serial-copy-button{border:0;cursor:pointer;background:var(--soft-pink);color:var(--hot);font-size:11px;padding:5px 9px;border-radius:8px;white-space:nowrap;transition:background .15s}
+.serial-copy-button:hover{background:#ffd9e6}
+#od-serial-copy{margin-left:-4px}
