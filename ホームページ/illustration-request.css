@@ -1,0 +1,128 @@
+/* ============================================
+   イラスト依頼フォーム — 専用デザイン
+   白〜アイボリー地に、淡いピンク〜ローズのアクセント。
+   サイト全体の「かわいい」より少し落ち着いた、
+   きちんとした依頼フォームの雰囲気を意識しています。
+   ============================================ */
+
+.ireq-body{
+  --ireq-bg:#fffdfa;
+  --ireq-ink:#3c322e;
+  --ireq-muted:#8a7c78;
+  --ireq-rose:#d98299;
+  --ireq-rose-deep:#c15c78;
+  --ireq-border:#f0dbe0;
+  --ireq-card:#ffffff;
+  --ireq-tint-must:#f3f8f0;
+  --ireq-tint-must-border:#cfe3c4;
+  --ireq-tint-avoid:#f7f1f0;
+  --ireq-tint-avoid-border:#e2cfc9;
+  background:var(--ireq-bg);
+  color:var(--ireq-ink);
+}
+
+.ireq-header{display:flex;align-items:center;justify-content:space-between;padding:22px max(6vw,24px);border-bottom:1px solid var(--ireq-border)}
+.ireq-brand{display:flex;align-items:center;gap:8px;font:700 15px var(--round);color:var(--ireq-ink)}
+.ireq-brand .brand-dot{color:var(--ireq-rose-deep)}
+.ireq-header nav a{font-size:11px;font-weight:700;color:var(--ireq-rose-deep);border-bottom:1px dashed var(--ireq-rose);padding-bottom:2px}
+
+.ireq-main{max-width:640px;margin:0 auto;padding:50px 20px 90px}
+.ireq-step{width:100%}
+
+.ireq-intro-wrap{text-align:center;margin-bottom:36px}
+.ireq-eyebrow{margin:0 0 14px;font:700 10px var(--fun);letter-spacing:.16em;color:var(--ireq-rose-deep)}
+.ireq-intro-wrap h1{margin:0 0 22px;font-size:clamp(24px,5vw,30px);font-weight:800;letter-spacing:-.02em;line-height:1.4;color:var(--ireq-ink)}
+.ireq-form-head{margin-bottom:44px}
+.ireq-intro{max-width:520px;margin:0 auto;text-align:left;font-size:13px;line-height:2;color:var(--ireq-ink)}
+.ireq-intro p{margin:0 0 16px}
+.ireq-intro p:last-child{margin-bottom:0}
+.ireq-serial-note{margin:0;font-size:12px;color:var(--ireq-muted)}
+.ireq-serial-note b{color:var(--ireq-rose-deep);letter-spacing:.02em}
+
+/* ===== コード入力 ===== */
+.ireq-code-form{max-width:420px;margin:0 auto;padding:30px 26px;border-radius:18px;background:var(--ireq-card);border:1px solid var(--ireq-border);box-shadow:0 4px 20px rgba(60,50,46,.05)}
+.ireq-code-hint{margin:16px 0 0;font-size:10px;line-height:1.9;color:var(--ireq-muted)}
+
+/* ===== 共通フィールド ===== */
+.ireq-field{display:grid;gap:8px;margin-bottom:0}
+.ireq-field input,.ireq-field select{width:100%;border:1px solid var(--ireq-border);border-radius:12px;padding:14px 16px;font:15px var(--round);color:var(--ireq-ink);background:#fff;outline:0}
+.ireq-field input:focus,.ireq-field select:focus{border-color:var(--ireq-rose);box-shadow:0 0 0 3px rgba(217,130,153,.15)}
+
+.ireq-submit-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:16px 20px;border:0;border-radius:14px;background:var(--ireq-rose-deep);color:#fff;font:700 14px var(--round);cursor:pointer;transition:filter .15s}
+.ireq-submit-button:hover{filter:brightness(1.06)}
+.ireq-submit-button span{font:400 16px var(--fun)}
+.ireq-submit-full{margin-top:8px}
+
+.ireq-message{margin:12px 0 0;text-align:center;font-size:11px;color:var(--ireq-rose-deep);min-height:1em}
+
+/* ===== セクション（01〜06） ===== */
+.ireq-section{margin-bottom:46px}
+.ireq-section:last-of-type{margin-bottom:32px}
+.ireq-section-head{display:flex;align-items:baseline;gap:16px;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--ireq-border)}
+.ireq-section-num{flex:0 0 auto;font:800 40px/1 var(--fun);color:var(--ireq-rose);letter-spacing:-.02em}
+.ireq-section-head h2{margin:0;font-size:18px;font-weight:800;letter-spacing:-.01em;color:var(--ireq-ink)}
+.ireq-section-head small{display:block;margin-top:3px;font:700 9px var(--fun);letter-spacing:.14em;color:var(--ireq-muted)}
+
+.ireq-section-body{background:var(--ireq-card);border:1px solid var(--ireq-border);border-radius:18px;padding:26px 24px}
+
+/* ===== 質問1つぶん ===== */
+.ireq-question{margin-bottom:32px}
+.ireq-question:last-child{margin-bottom:0}
+.ireq-q-label{display:block;margin-bottom:8px;font-size:14px;font-weight:800;color:var(--ireq-ink);line-height:1.6}
+.ireq-helper{margin:0 0 12px;font-size:12px;line-height:1.8;color:var(--ireq-muted)}
+.ireq-question input,.ireq-question select,.ireq-question textarea{
+  width:100%;border:1px solid var(--ireq-border);border-radius:12px;padding:14px 16px;
+  font:15px var(--round);color:var(--ireq-ink);background:#fff;outline:0;line-height:1.7;
+}
+.ireq-question input,.ireq-question select{min-height:50px}
+.ireq-question textarea{min-height:120px;resize:vertical}
+.ireq-question input:focus,.ireq-question select:focus,.ireq-question textarea:focus{
+  border-color:var(--ireq-rose);box-shadow:0 0 0 3px rgba(217,130,153,.15);
+}
+
+/* 「絶対に入れてほしい／ほしくない」の視覚的な区別（赤色は使わない） */
+.ireq-tone-must,.ireq-tone-avoid{padding:18px 18px 4px;margin:0 -18px 32px;border-radius:14px}
+.ireq-tone-must{background:var(--ireq-tint-must);border:1px solid var(--ireq-tint-must-border)}
+.ireq-tone-avoid{background:var(--ireq-tint-avoid);border:1px solid var(--ireq-tint-avoid-border)}
+.ireq-tone-must .ireq-q-label::before{content:'○ ';color:#6a9a53}
+.ireq-tone-avoid .ireq-q-label::before{content:'△ ';color:#a87a68}
+
+/* ===== 送信前の確認チェック ===== */
+.ireq-confirm-row{margin:6px 0 26px;text-align:center}
+.ireq-confirm-check{display:inline-flex;align-items:center;gap:10px;padding:14px 22px;border-radius:99px;background:var(--ireq-card);border:1px solid var(--ireq-border);cursor:pointer;font-size:12px;font-weight:700;color:var(--ireq-ink)}
+.ireq-confirm-check input{width:18px;height:18px;accent-color:var(--ireq-rose-deep);margin:0}
+
+.ireq-footer{text-align:center;padding:40px 20px;color:var(--ireq-muted);font-size:11px}
+.ireq-footer a{font-weight:700;color:var(--ireq-rose-deep)}
+.ireq-footer p{margin:6px 0 0}
+
+/* ===== レスポンシブ（スマホを最優先） ===== */
+@media(max-width:640px){
+  .ireq-main{padding:34px 16px 70px}
+  .ireq-code-form{padding:24px 18px}
+  .ireq-section-body{padding:20px 16px}
+  .ireq-section-num{font-size:32px}
+  .ireq-tone-must,.ireq-tone-avoid{margin-left:-16px;margin-right:-16px;padding-left:16px;padding-right:16px}
+  .ireq-question{margin-bottom:28px}
+  .ireq-q-label{font-size:14px}
+}
+
+@media(min-width:641px){
+  .ireq-intro-wrap h1{font-size:32px}
+}
+
+/* ===== 追加：どちらの依頼か選ぶステップ ===== */
+.ireq-lead{max-width:480px;margin:0 auto 30px;font-size:13px;line-height:2;color:var(--ireq-muted)}
+.ireq-kind-choices{display:grid;gap:14px;max-width:480px;margin:0 auto}
+.ireq-kind-card{display:flex;flex-direction:column;gap:6px;align-items:flex-start;text-align:left;padding:22px 22px;border-radius:16px;border:1px solid var(--ireq-border);background:var(--ireq-card);cursor:pointer;transition:border-color .15s,transform .15s}
+.ireq-kind-card:hover{border-color:var(--ireq-rose);transform:translateY(-1px)}
+.ireq-kind-card b{font-size:16px;font-weight:800;color:var(--ireq-ink)}
+.ireq-kind-card span{font-size:12px;color:var(--ireq-muted)}
+.ireq-back-link{display:block;margin:22px auto 0;border:0;background:none;color:var(--ireq-muted);font-size:11px;text-decoration:underline;cursor:pointer}
+
+/* ===== 追加：必須バッジ／選択式の質問 ===== */
+.ireq-required{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:99px;background:var(--ireq-rose-deep);color:#fff;font:700 9px var(--round);vertical-align:middle}
+.ireq-choice-group{display:grid;gap:10px}
+.ireq-choice{display:flex;align-items:center;gap:10px;padding:13px 16px;border:1px solid var(--ireq-border);border-radius:12px;cursor:pointer;font-size:13px;color:var(--ireq-ink)}
+.ireq-choice:has(input:checked){border-color:var(--ireq-rose);background:#fdf3f5}
+.ireq-choice input{width:18px;height:18px;accent-color:var(--ireq-rose-deep);flex:0 0 auto}

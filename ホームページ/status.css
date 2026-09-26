@@ -1,0 +1,53 @@
+.status-main{padding-top:55px;padding-bottom:100px;max-width:640px;margin:0 auto}
+.status-intro{text-align:center;margin-bottom:30px}
+.status-intro h1{margin:10px 0 12px;font-size:clamp(26px,4vw,36px);letter-spacing:-.05em}
+.status-intro p{margin:0;color:var(--muted);font-size:12px}
+.status-form{display:grid;gap:16px;max-width:420px;margin:0 auto 40px;padding:26px;border-radius:20px;background:#fffdfa;box-shadow:0 8px 25px rgba(138,82,110,.1)}
+.status-form label{display:grid;gap:6px;font-size:11px;font-weight:700;color:#a58798}
+.status-form input{border:1px solid #ead3dd;border-radius:10px;padding:11px 13px;outline:0;font:13px var(--round);color:var(--ink);background:#fff}
+.status-form input:focus{border-color:var(--hot);box-shadow:0 0 0 3px #ffe5ef}
+.status-form .button{justify-content:center}
+.form-message{margin:0;font-size:11px;color:#c14978}
+
+.serial-tag{font:700 11px var(--fun);letter-spacing:.03em;color:var(--hot);background:#ffe1eb;padding:4px 10px;border-radius:99px}
+.order-status-badge{display:inline-block;padding:5px 13px;border-radius:99px;font:700 10px var(--round)}
+.order-status-badge.st-received{background:#f1eef2;color:#8a7f93}
+.order-status-badge.st-prep{background:var(--lav);color:var(--purple)}
+.order-status-badge.st-working{background:var(--soft-pink);color:var(--hot)}
+.order-status-badge.st-awaiting{background:#fff3d6;color:#8a6417}
+.order-status-badge.st-revising{background:#ffe9db;color:#d8622f}
+.order-status-badge.st-final{background:#e5f0ff;color:#5b7fbf}
+.order-status-badge.st-delivered{background:var(--mint);color:#2f8f6b}
+.order-status-badge.st-completed{background:#dcf5e3;color:#3e9e63}
+.order-status-badge.st-cancelled{background:#eee9ef;color:#9b93a3}
+
+.status-card{padding:26px;border-radius:22px;background:#fffdfa;box-shadow:0 8px 25px rgba(138,82,110,.1)}
+.status-card-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.status-card-head b{font-size:16px}
+.order-status-badge-line{margin:0 0 20px}
+.status-two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
+.status-two small{display:block;color:#a58798;font-size:10px;font-weight:700;margin-bottom:4px}
+.status-two b{font-size:13px}
+.status-progress-head{display:flex;align-items:baseline;gap:12px;margin-bottom:8px}
+.status-progress-head b{font:700 26px var(--fun);color:var(--hot)}
+.status-progress-head span{color:var(--muted);font:700 11px var(--fun)}
+.status-progress-bar{height:14px;border-radius:99px;background:#f4e2ea;overflow:hidden;margin-bottom:20px}
+.status-progress-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--pink),var(--hot));transition:width .3s}
+.status-processes{display:grid;gap:8px;margin-bottom:20px}
+.status-process-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 13px;border-radius:12px;background:#fff7fa}
+.status-process-row b{font-size:11px}
+.status-process-row span{font:700 9px var(--round);padding:3px 9px;border-radius:99px}
+.status-rev{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;background:var(--lav);margin-bottom:16px}
+.status-rev small{color:var(--purple);font-weight:700;font-size:10px}
+.status-rev b{color:var(--purple);font:700 13px var(--fun)}
+.status-hint{margin:0;color:var(--muted);font-size:10px;line-height:1.8}
+
+@media(max-width:560px){.status-form,.status-card{padding:18px}.status-two{grid-template-columns:1fr}}
+
+/* ===== 特定商取引法に基づく表記ページ ===== */
+.legal-table{width:100%;border-collapse:collapse}
+.legal-table tr{border-bottom:1px dashed #f0d7e2}
+.legal-table tr:last-child{border-bottom:0}
+.legal-table th{width:35%;padding:14px 12px 14px 0;text-align:left;vertical-align:top;font-size:11px;font-weight:700;color:#a58798}
+.legal-table td{padding:14px 0;font-size:12px;line-height:1.8;color:var(--ink)}
+@media(max-width:560px){.legal-table th,.legal-table td{display:block;width:100%;padding:6px 0}.legal-table th{color:var(--hot)}.legal-table tr{display:block;padding:12px 0}}

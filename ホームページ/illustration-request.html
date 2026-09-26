@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="ぴのきー。｜イラスト制作・パーツ分け制作のヒアリングフォーム" />
+    <title>ぴのきー。 | 依頼フォーム</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A9%B7%3C/text%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="illustration-request.css" />
+  </head>
+  <body class="ireq-body">
+    <header class="ireq-header">
+      <a href="index.html" class="ireq-brand" aria-label="ぴのきー。トップへ"><span class="brand-dot">●</span><span>ぴのきー。</span></a>
+      <nav aria-label="メインメニュー"><a href="status.html">進捗を確認</a></nav>
+    </header>
+
+    <main class="ireq-main">
+
+      <section id="ireq-code-step" class="ireq-step ireq-intro-wrap">
+        <p class="ireq-eyebrow">DESIGN REQUEST</p>
+        <h1>依頼フォーム</h1>
+        <p class="ireq-lead">お客様コードを入力すると、「イラスト制作」または「パーツ分け制作」の依頼フォームに進めます。</p>
+        <form id="ireq-code-form" class="ireq-code-form">
+          <label class="ireq-field">
+            <span class="ireq-q-label">お客様コード</span>
+            <input id="ireq-serial" required placeholder="PNK-260916-LT8H" autocomplete="off" />
+          </label>
+          <button class="ireq-submit-button" type="submit">次へ <span>→</span></button>
+          <p id="ireq-code-message" class="ireq-message"></p>
+          <p class="ireq-code-hint">コードが分からない場合や届いていない場合は、「きのぴー。」公式Xまたは Discord までお問い合わせください💬</p>
+        </form>
+      </section>
+
+      <section id="ireq-kind-step" class="ireq-step ireq-intro-wrap" hidden>
+        <p class="ireq-eyebrow">DESIGN REQUEST</p>
+        <h1>どちらのご依頼ですか？</h1>
+        <p class="ireq-lead">ご希望の内容を選んでください。</p>
+        <div class="ireq-kind-choices">
+          <button type="button" id="ireq-kind-illust" class="ireq-kind-card">
+            <b id="ireq-kind-illust-label">イラスト制作</b>
+            <span>キャラクターデザイン・イラストについてお伺いします</span>
+          </button>
+          <button type="button" id="ireq-kind-parts" class="ireq-kind-card">
+            <b id="ireq-kind-parts-label">パーツ分け制作</b>
+            <span>完成イラストのパーツ分けについてお伺いします</span>
+          </button>
+        </div>
+        <button type="button" id="ireq-kind-back" class="ireq-back-link">← コードの入力に戻る</button>
+      </section>
+
+      <section id="ireq-form-step" class="ireq-step" hidden>
+        <div class="ireq-intro-wrap ireq-form-head">
+          <p class="ireq-eyebrow">DESIGN REQUEST</p>
+          <h1 id="ireq-form-kind-label">ご回答をお願いします</h1>
+          <p class="ireq-serial-note">お客様コード：<b id="ireq-serial-display"></b></p>
+          <div id="ireq-intro" class="ireq-intro"></div>
+        </div>
+        <form id="ireq-answer-form" class="ireq-answer-form">
+          <div id="ireq-questions"></div>
+          <div class="ireq-confirm-row">
+            <label class="ireq-confirm-check"><input id="ireq-confirm" type="checkbox" /><span>入力内容を確認しました</span></label>
+          </div>
+          <button class="ireq-submit-button ireq-submit-full" type="submit">この内容で送信する <span>→</span></button>
+          <p id="ireq-submit-message" class="ireq-message"></p>
+        </form>
+      </section>
+
+      <section id="ireq-done-step" class="ireq-step ireq-intro-wrap" hidden>
+        <p class="ireq-eyebrow">DESIGN REQUEST</p>
+        <h1>ありがとうございました♡</h1>
+        <div id="ireq-outro" class="ireq-intro"></div>
+      </section>
+
+    </main>
+
+    <footer class="ireq-footer"><a href="index.html">ぴのきー。</a><p>© 2026 PINOKII.</p></footer>
+
+    <script src="config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="illustration-request.js"></script>
+  </body>
+</html>

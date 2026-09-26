@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ぴのきー。 | 依頼BOX</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%99%EF%B8%8F%3C/text%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" /><link rel="stylesheet" href="admin.css" />
+  </head>
+  <body class="admin-body">
+    <header class="admin-header"><a class="brand" href="index.html"><span class="brand-dot">●</span><span>ぴのきー。</span></a><p>order manager <span>✦</span></p><a href="admin.html">管理画面トップへ ↩</a></header>
+    <main class="admin-main">
+      <section id="setup-message" class="setup-message" hidden><span>♡</span><h1>はじめにSupabaseを接続してください</h1><p><code>supabase/schema.sql</code> をSupabaseのSQL Editorで実行後、<code>config.js</code> にURLとanon keyを入力すると管理画面を使えます。</p></section>
+      <section id="login-panel" class="login-panel" hidden><p class="section-tag">staff only <span>✦</span></p><h1>管理画面にログイン</h1><p>依頼管理を見るにはログインが必要です。</p><a class="button bubble" href="admin.html">管理画面トップでログインする <span>→</span></a></section>
+      <section id="inquiries-panel" hidden>
+        <div class="admin-title"><div><p class="section-tag">order box <span>♡</span></p><h1>依頼BOX</h1></div><p>相談から納品まで、いま何をすべきか一目でわかる管理画面です。</p></div>
+
+        <div id="alert-strip" class="alert-strip" hidden></div>
+
+        <div class="dash-grid">
+          <section class="dash-card" id="today-card"><div class="dash-head"><p class="section-tag">today's todo <span>♡</span></p><h2>今日やること</h2></div><ol id="today-tasks" class="today-tasks"><li class="dash-empty">依頼はまだありません</li></ol></section>
+          <section class="dash-card" id="sales-card"><div class="dash-head"><p class="section-tag">sales <span>✦</span></p><h2>売上ダッシュボード</h2></div><div id="sales-tiles" class="sales-tiles"></div><div class="sales-chart-wrap"><h3>月別の入金額（直近6ヶ月）</h3><div id="sales-chart" class="sales-chart"></div></div><div class="export-actions"><button type="button" id="export-csv" class="od-mini-button">売上CSVを書き出す</button><button type="button" id="export-json" class="od-mini-button is-ghost">全データをJSONで保存</button></div></section>
+        </div>
+
+        <section class="dash-card dash-card-wide" id="calendar-card">
+          <details id="calendar-details">
+            <summary class="dash-head-summary"><p class="section-tag">calendar <span>✦</span></p><h2>納期カレンダー</h2><span class="cal-toggle-hint"></span></summary>
+            <div class="cal-head"><button type="button" id="cal-prev" class="od-mini-button is-ghost">← 前の月</button><b id="cal-month"></b><button type="button" id="cal-next" class="od-mini-button is-ghost">次の月 →</button></div>
+            <div id="cal-grid" class="cal-grid"></div>
+            <div id="cal-day-list" class="cal-day-list"></div>
+          </details>
+        </section>
+
+        <div class="inquiry-filter-bar">
+          <div id="inquiry-filters" class="inquiry-filters">
+            <button class="filter-chip is-active" data-filter="all">すべて <span id="count-all">0</span></button>
+            <button class="filter-chip" data-filter="pending">未返信 <span id="count-pending">0</span></button>
+            <button class="filter-chip" data-filter="done">返信済み <span id="count-done">0</span></button>
+          </div>
+          <div class="filter-selects">
+            <select id="status-filter" class="filter-select"></select>
+            <select id="payment-filter" class="filter-select"></select>
+            <select id="due-filter" class="filter-select">
+              <option value="all">納期：すべて</option>
+              <option value="overdue">納期超過</option>
+              <option value="week">7日以内</option>
+              <option value="none">納期未設定</option>
+            </select>
+          </div>
+          <input id="inquiry-search" type="search" placeholder="シリアル・依頼名・連絡先・内容で検索" />
+        </div>
+        <div id="inquiries-admin-list" class="inquiry-list"></div>
+        <dialog id="delete-confirm"><div class="confirm-box">
+          <p class="confirm-title">本当に削除しますか？ <span>♡</span></p>
+          <p class="confirm-note">この依頼を消すと元に戻せません。</p>
+          <div class="confirm-actions">
+            <button id="delete-ok" class="confirm-delete">消しちゃう</button>
+            <button id="delete-cancel" class="confirm-keep">やっぱりやめる</button>
+          </div>
+        </div></dialog>
+
+        <dialog id="order-detail"><div class="od-box">
+          <div class="od-head">
+            <div class="od-head-left"><span class="serial-tag" id="od-serial"></span><b id="od-name"></b><div id="od-scope-tags" class="scope-tag-row"></div></div>
+            <div class="od-head-right"><span id="od-replied-badge" class="reply-badge"></span><select id="od-status" class="od-status-select"></select><button class="od-close" aria-label="閉じる">×</button></div>
+          </div>
+          <nav class="od-tabs">
+            <button class="od-tab is-active" data-tab="basic">概要</button>
+            <button class="od-tab" data-tab="progress">進捗チェックリスト</button><button class="od-tab" data-tab="process">工程</button><button class="od-tab" data-tab="consult">相談</button>
+            <button class="od-tab" data-tab="contract">表情</button>
+            <button class="od-tab" data-tab="illustform">依頼票</button>
+            <button class="od-tab" data-tab="files">ファイル</button>
+            <button class="od-tab" data-tab="templates">テンプレ文</button>
+          </nav>
+          <div class="od-panels">
+            <section id="panel-basic" class="od-panel is-open">
+
+              <div class="dash-card dash-overview">
+                <h3 class="dash-card-title"><span class="dash-card-icon">📋</span>依頼概要</h3>
+                <div class="dash-grid-3">
+                  <label class="dash-field"><span class="dash-field-label">基本プラン</span><input id="od-plan" /></label>
+                  <label class="dash-field"><span class="dash-field-label">可動域</span><input id="od-motion" /></label>
+                  <label class="dash-field"><span class="dash-field-label">オプション</span><input id="od-options" /></label>
+                </div>
+                <div class="dash-chip-row">
+                  <label class="dash-chip-check"><input id="od-illust-needed" type="checkbox" /><span><span data-illust-label>イラスト制作</span></span></label>
+                  <label class="dash-chip-check"><input id="od-chardes-needed" type="checkbox" /><span><span data-chardes-label>キャラクターデザイン</span></span></label>
+                </div>
+                <div class="dash-divider"></div>
+                <div class="dash-grid-2">
+                  <label class="dash-field"><span class="dash-field-label">受付日</span><b id="od-created" class="dash-static"></b></label>
+                  <label class="dash-check-field"><input id="od-replied" type="checkbox" /><span>返信済みにする</span></label>
+                </div>
+                <label class="dash-field wide">依頼内容<textarea id="od-message" rows="3"></textarea></label>
+              </div>
+
+              <div class="dash-card dash-progress-card">
+                <h3 class="dash-card-title"><span class="dash-card-icon">🚀</span>制作・進行状況</h3>
+                <div class="dash-highlight-row">
+                  <div class="dash-highlight dash-highlight-money">
+                    <span class="dash-highlight-label">お支払い金額</span>
+                    <strong id="od-total">¥0</strong>
+                    <div class="dash-money-sub">
+                      <select id="od-payment" class="filter-select"></select>
+                      <input id="od-paid-amount" type="number" min="0" placeholder="支払額" />
+                      <input id="od-paid-date" type="date" />
+                    </div>
+                  </div>
+                  <div class="dash-highlight dash-highlight-due">
+                    <span class="dash-highlight-label"><span class="dash-cal-icon">📅</span>納品予定日</span>
+                    <input id="od-due" type="date" />
+                    <small id="od-due-countdown" class="due-pill"></small>
+                  </div>
+                </div>
+
+                <div class="dash-progress-block">
+                  <div class="dash-progress-head">
+                    <span class="dash-progress-current">現在：<b id="od-current-stage">—</b></span>
+                    <b id="od-progress-rate">0%</b>
+                  </div>
+                  <div class="od-progress-bar dash-progress-bar-big"><i id="od-progress-fill"></i></div>
+                  <span id="od-progress-count" class="dash-progress-count">0 / 0 完了</span>
+                </div>
+
+                <div class="dash-divider"></div>
+                <div class="dash-fee-row">
+                  <label class="dash-field"><span class="dash-field-label">基本料金（円）</span><input id="od-base" type="number" min="0" /></label>
+                  <div class="dash-rev-block">
+                    <span class="dash-field-label">修正回数</span>
+                    <div class="rev-badge"><input id="od-rev-used" type="number" min="0" /><span>/</span><input id="od-rev-limit" type="number" min="0" /><span>回</span></div>
+                    <b id="od-rev-left" class="dash-rev-left"></b>
+                    <button type="button" id="od-rev-add" class="od-mini-button">＋1回 修正</button>
+                  </div>
+                </div>
+                <p id="od-rev-warn" class="od-warn" hidden>⚠ 無料修正回数を超えています（追加料金の発生をご確認ください）</p>
+
+                <div class="dash-divider"></div>
+                <div class="od-extras">
+                  <h4>追加料金</h4>
+                  <div class="catalog-add-row"><select id="od-catalog-select" class="filter-select"></select><button type="button" id="od-catalog-add" class="od-mini-button">＋ 選んだ内容を追加</button></div>
+                  <div id="od-extra-items"></div>
+                  <button type="button" id="od-extra-add" class="od-mini-button is-ghost">＋ 自由入力で追加</button>
+                </div>
+              </div>
+
+              <div class="dash-card dash-comm-card">
+                <h3 class="dash-card-title"><span class="dash-card-icon">💬</span>コミュニケーション</h3>
+                <div class="dash-contact-line"><span class="dash-field-label">連絡方法</span><b id="od-contact"></b></div>
+                <div id="od-contact-actions" class="dash-contact-actions"></div>
+                <button type="button" id="dm-open-templates" class="dash-dm-button is-outline">✉️ 返信テンプレを開く</button>
+              </div>
+
+              <div class="dash-card dash-memo-card">
+                <h3 class="dash-card-title"><span class="dash-card-icon">📝</span>スタッフメモ<small>（クライアントには表示されません）</small></h3>
+                <textarea id="od-memo" rows="5" placeholder="髪の揺れを強める / 口角を少し上げる / 左目の開きが弱い など"></textarea>
+              </div>
+
+            </section>
+            <section id="panel-progress" class="od-panel">
+              <p class="od-hint">進捗の割合・現在のステージは「概要」タブにまとめて表示されます。ここではチェックリストの詳細を編集できます。</p>
+              <div id="od-progress-box" class="od-check-grid"></div>
+            </section>
+            <section id="panel-process" class="od-panel"></section>
+            <section id="panel-consult" class="od-panel"></section>
+            <section id="panel-contract" class="od-panel">
+              <h3>表情<button type="button" id="expr-catalog-edit" class="od-mini-button is-ghost">表情の種類を編集</button></h3>
+              <div id="od-expr-box" class="od-check-grid compact"></div>
+              <p id="od-expr-count" class="od-hint">選択中：0種類</p>
+            </section>
+            <section id="panel-illustform" class="od-panel">
+              <p class="od-hint">お客様が「依頼フォーム」（お客様コード＝シリアルナンバー）でイラスト制作またはパーツ分け制作に回答すると、ここに表示されます。</p>
+              <div id="od-illustform-box"></div>
+            </section>
+            <section id="panel-files" class="od-panel">
+              <h3>ファイル管理</h3>
+              <div class="od-file-form">
+                <select id="order-file-kind" class="filter-select"></select>
+                <input id="order-file-input" type="file" />
+                <button type="button" id="order-file-upload" class="od-mini-button">アップロード</button>
+              </div>
+              <div id="od-file-list" class="od-file-list"></div>
+            </section>
+            <section id="panel-templates" class="od-panel">
+              <div class="url-copy-box">
+                <h4>各種URLをコピー</h4>
+                <div id="od-url-list" class="url-copy-list"></div>
+              </div>
+              <p class="od-hint">押すと、この依頼の内容を差し込んだ文面をコピーします。連絡方法に合わせてお使いください。「編集」から文面そのものを直接書き換えられます。</p>
+              <div id="od-template-list" class="tmpl-list"></div>
+              <button type="button" id="tmpl-msg-add" class="od-mini-button is-ghost">＋ 新しいテンプレ文を追加</button>
+            </section>
+          </div>
+          <footer class="od-foot">
+            <button id="od-save" class="od-save-button">変更を保存 <span>→</span></button>
+            <span id="od-save-message" class="form-message"></span>
+          </footer>
+        </div></dialog>
+
+        <dialog id="consult-dialog"><div class="consult-box">
+          <button class="od-close consult-close" aria-label="閉じる">×</button>
+          <p class="section-tag">consult <span>♡</span></p>
+          <h2 id="consult-title">追加修正の相談を受付</h2>
+          <form id="consult-form" class="consult-form">
+            <label>相談内容<textarea id="consult-note" rows="3" required placeholder="例：髪型をもう少し変更したい"></textarea></label>
+            <div class="od-two"><label>追加料金（円）<input id="consult-fee" type="number" min="0" required /></label><label>追加修正回数<input id="consult-count" type="number" min="1" value="1" /></label></div>
+            <button type="submit" class="od-save-button">相談を受付する <span>→</span></button>
+          </form>
+        </div></dialog>
+
+        <dialog id="tmpl-msg-dialog"><div class="tmpl-edit-box">
+          <button class="od-close tmpl-msg-close" aria-label="閉じる">×</button>
+          <p class="section-tag">template <span>♡</span></p>
+          <h2 id="tmpl-msg-title">定型文を編集</h2>
+          <form id="tmpl-msg-form" class="tmpl-edit-form">
+            <input type="hidden" id="tmpl-msg-index" value="" />
+            <label>テンプレ名<input id="tmpl-msg-label" required placeholder="例：お見積りのご案内" /></label>
+            <label>本文<textarea id="tmpl-msg-body" rows="9" required placeholder="{{name}} 様&#10;&#10;お見積りは {{total}} となります。"></textarea></label>
+            <p class="od-hint">使える差し込み：{{name}}（依頼者名）{{serial}}（シリアル）{{due}}（納期）{{total}}（金額）{{revLimit}}（無料修正回数）{{revUsed}}（使用済み回数）{{revLeft}}（残り回数）</p>
+            <div class="tmpl-edit-actions">
+              <button type="submit" class="od-save-button">保存する <span>→</span></button>
+              <button type="button" id="tmpl-msg-delete" class="od-mini-button is-ghost">この定型文を削除</button>
+            </div>
+            <p id="tmpl-msg-message" class="form-message"></p>
+          </form>
+        </div></dialog>
+
+        <dialog id="tmpl-proc-dialog"><div class="tmpl-edit-box">
+          <button class="od-close tmpl-proc-close" aria-label="閉じる">×</button>
+          <p class="section-tag">template <span>♡</span></p>
+          <h2>工程テンプレートを編集</h2>
+          <form id="tmpl-proc-form" class="tmpl-edit-form">
+            <label>テンプレート一覧<textarea id="tmpl-proc-raw" rows="12" placeholder="テンプレ名を1行目、工程を1行1つずつ「工程名|料金|作業名:無料修正回数,作業名:無料修正回数」の形式で書いてください。テンプレートを複数作るときは === で区切ります。"></textarea></label>
+            <p class="od-hint">管理画面トップの「基本設定・トップ表示」の内容と共通です。ここで保存すると、そちらの欄にも反映されます。</p>
+            <div class="tmpl-edit-actions"><button type="submit" class="od-save-button">保存する <span>→</span></button></div>
+            <p id="tmpl-proc-message" class="form-message"></p>
+          </form>
+        </div></dialog>
+
+        <dialog id="expr-catalog-dialog"><div class="tmpl-edit-box">
+          <button class="od-close expr-catalog-close" aria-label="閉じる">×</button>
+          <p class="section-tag">expressions <span>♡</span></p>
+          <h2>表情の種類を編集</h2>
+          <form id="expr-catalog-form" class="tmpl-edit-form">
+            <label>表情の一覧（1行に1つ）<textarea id="expr-catalog-raw" rows="10" placeholder="笑顔&#10;怒り&#10;困り&#10;驚き&#10;泣く&#10;ウィンク"></textarea></label>
+            <p class="od-hint">ここに登録した表情が、依頼詳細の「契約内容」タブで選択できるようになります。</p>
+            <div class="tmpl-edit-actions"><button type="submit" class="od-save-button">保存する <span>→</span></button></div>
+            <p id="expr-catalog-message" class="form-message"></p>
+          </form>
+        </div></dialog>
+      </section>
+    </main>
+    <script src="config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="admin-inquiries.js"></script><script src="admin-processes.js"></script>
+  </body>
+</html>
