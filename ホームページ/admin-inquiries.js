@@ -352,6 +352,24 @@ let catalogOptions = [];
 let catalogFees = { illustration: 0, chardesign: 0 };
 let scopeLabels = { illustration: 'イラスト制作', chardesign: 'キャラクターデザイン' };
 let siteBaseUrl = '';
+let requestFormLabels = null;
+
+async function getRequestFormLabel(key) {
+  if (!requestFormLabels) {
+    requestFormLabels = {};
+    const { data } = await db.from('site_settings').select('key,value').in('key', ['request_forms', 'illustration_form_config', 'parts_form_config']);
+    const map = Object.fromEntries((data || []).map((row) => [row.key, row.value]));
+    if (map.request_forms) {
+      try { (JSON.parse(map.request_forms) || []).forEach((form) => { requestFormLabels[form.key] = form.label; }); } catch (error) { /* 無視 */ }
+    } else {
+      if (map.illustration_form_config) requestFormLabels.illustration = 'イラスト制作';
+      if (map.parts_form_config) requestFormLabels.parts = 'パーツ分け制作';
+    }
+    if (!requestFormLabels.illustration) requestFormLabels.illustration = 'イラスト制作';
+    if (!requestFormLabels.parts) requestFormLabels.parts = 'パーツ分け制作';
+  }
+  return requestFormLabels[key] || key;
+}
 let urlCopyExtraRaw = '';
 
 async function loadCatalog() {
@@ -828,6 +846,7 @@ async function renderIllustFormPanel(item) {
   const { data, error } = await db.from('illustration_requests').select('*').eq('serial', item.serial).order('created_date', { ascending: false });
   if (error) { box.innerHTML = `<p class="od-hint">まだこの機能は使えません（${error.message.includes('does not exist') ? 'supabase/illustration-request.sql と supabase/parts-request.sql を実行してください' : error.message}）</p>`; return; }
   if (!data || !data.length) { box.innerHTML = '<p class="od-hint">まだ回答が届いていません。</p>'; return; }
+  await getRequestFormLabel(''); // ラベルのキャッシュを先に読み込んでおく
   box.innerHTML = data.map((entry) => {
     const rows = Object.entries(entry.answers || {}).filter(([, value]) => value && (!Array.isArray(value) || value.length)).map(([label, value]) => {
       const content = Array.isArray(value)
@@ -835,7 +854,7 @@ async function renderIllustFormPanel(item) {
         : escapeHtml(value).replace(/\n/g, '<br>');
       return `<div class="illustform-row"><b>${escapeHtml(label)}</b><span>${content}</span></div>`;
     }).join('') || '<p class="od-hint">回答内容が空でした。</p>';
-    const kindLabel = entry.form_type === 'parts' ? 'パーツ分け制作' : 'イラスト制作';
+    const kindLabel = requestFormLabels[entry.form_type] || entry.form_type || 'イラスト制作';
     const isUnviewed = entry.viewed !== true;
     const statusBadge = isUnviewed ? '<span class="illustform-status is-new">● 未確認</span>' : '<span class="illustform-status is-done">✓ 確認済み</span>';
     const confirmButton = isUnviewed ? `<button type="button" class="illustform-confirm-button" data-illustform-confirm="${entry.id}">確認しました <span>✓</span></button>` : '<span class="illustform-done-label">✓ 確認済み</span>';

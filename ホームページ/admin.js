@@ -150,8 +150,11 @@ document.addEventListener('click', (event) => { const editButton = event.target.
    追加機能：依頼フォームのビジュアルビルダー
    （イラスト制作／パーツ分け制作、Googleフォームのような編集体験）
    ============================================ */
-const FORM_BUILDER_DEFAULTS = {
-  illustration: {
+const FORM_BUILDER_DEFAULTS = [
+  {
+    key: 'illustration',
+    label: 'イラスト制作',
+    description: 'キャラクターデザイン・イラストについてお伺いします',
     intro: 'この度はキャラクターデザインのご依頼をご検討いただき、ありがとうございます🙇🏻‍♀️\n\nできるだけ詳しくご記入いただくことで、イメージに沿ったキャラクターデザインを制作しやすくなります。\n\nまだ決まっていない項目は、空欄のままで大丈夫です。',
     outro: '最後までご回答いただきありがとうございます🙇🏻‍♀️\n\nつきましては、後ほどご回答いただいた内容の確認事項と料金をメッセージにてお送りいたします💬',
     blocks: [
@@ -164,8 +167,11 @@ const FORM_BUILDER_DEFAULTS = {
       { type: 'textarea', label: '性格・雰囲気', helper: '', required: false }
     ]
   },
-  parts: {
-    intro: 'この度はパーツ分けのご依頼をご検討いただき、ありがとうございます🙇🏻‍♀️\n\nイラストデータそのものは、後ほど公式XまたはDiscordからお送りください。',
+  {
+    key: 'parts',
+    label: 'パーツ分け制作',
+    description: '完成イラストのパーツ分けについてお伺いします',
+    intro: 'この度はパーツ分けのご依頼をご検討いただき、ありがとうございます🙇🏻‍♀️\n\nイラストデータは、フォーム内からアップロードいただけます。',
     outro: '最後までご回答いただきありがとうございます🙇🏻‍♀️\n\nつきましては、後ほどご回答いただいた内容の確認事項と料金をメッセージにてお送りいたします💬',
     blocks: [
       { type: 'section', title: '基本情報', english: 'BASIC INFORMATION' },
@@ -176,24 +182,50 @@ const FORM_BUILDER_DEFAULTS = {
       { type: 'textarea', label: '特殊な動き・ご要望', helper: '', required: false }
     ]
   }
-};
+];
 
-let formBuilderState = { illustration: null, parts: null };
-let activeFormKind = 'illustration';
+let requestForms = null;
+let activeFormKey = null;
 
 function fbUid() { return `b${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`; }
+function fbFormKey() { return `form${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`; }
 
-async function loadFormBuilderKind(kind) {
-  const { data: row } = await db.from('site_settings').select('value').eq('key', `${kind}_form_config`).maybeSingle();
-  let parsed = null;
-  if (row?.value) { try { parsed = JSON.parse(row.value); } catch (error) { parsed = null; } }
-  const source = (parsed && Array.isArray(parsed.blocks) && parsed.blocks.length) ? parsed : FORM_BUILDER_DEFAULTS[kind];
-  formBuilderState[kind] = {
-    intro: source.intro || '',
-    outro: source.outro || '',
-    blocks: source.blocks.map((block) => ({ ...block, uid: fbUid(), options: block.options ? [...block.options] : [] }))
+function hydrateForm(form) {
+  return {
+    key: form.key,
+    label: form.label || '',
+    description: form.description || '',
+    intro: form.intro || '',
+    outro: form.outro || '',
+    blocks: (form.blocks || []).map((block) => ({ ...block, uid: fbUid(), options: block.options ? [...block.options] : [] }))
   };
 }
+
+async function loadRequestForms() {
+  const { data: row } = await db.from('site_settings').select('value').eq('key', 'request_forms').maybeSingle();
+  let parsed = null;
+  if (row?.value) { try { parsed = JSON.parse(row.value); } catch (error) { parsed = null; } }
+  if (Array.isArray(parsed) && parsed.length) {
+    requestForms = parsed.map(hydrateForm);
+    activeFormKey = requestForms[0].key;
+    return;
+  }
+  // 旧形式（イラスト・パーツ分けの2つ固定）からの自動移行
+  const { data: oldRows } = await db.from('site_settings').select('key,value').in('key', ['illustration_form_config', 'parts_form_config']);
+  const oldMap = Object.fromEntries((oldRows || []).map((r) => [r.key, r.value]));
+  const migrated = [];
+  [['illustration_form_config', FORM_BUILDER_DEFAULTS[0]], ['parts_form_config', FORM_BUILDER_DEFAULTS[1]]].forEach(([oldKey, base]) => {
+    if (!oldMap[oldKey]) return;
+    try {
+      const p = JSON.parse(oldMap[oldKey]);
+      migrated.push({ key: base.key, label: base.label, description: base.description, intro: p.intro || base.intro, outro: p.outro || base.outro, blocks: Array.isArray(p.blocks) && p.blocks.length ? p.blocks : base.blocks });
+    } catch (error) { /* 無視して既定を使う */ }
+  });
+  requestForms = (migrated.length ? migrated : FORM_BUILDER_DEFAULTS).map(hydrateForm);
+  activeFormKey = requestForms[0]?.key || null;
+}
+
+function currentForm() { return requestForms?.find((form) => form.key === activeFormKey) || null; }
 
 function fbEscape(value) {
   return String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
@@ -235,16 +267,18 @@ function renderFormBuilderBlock(block, index, total) {
 }
 
 function renderFormBuilder() {
-  const state = formBuilderState[activeFormKind];
-  if (!state) return;
+  const state = currentForm();
+  $('#fb-kind-tabs').innerHTML = (requestForms || []).map((form) => `<button type="button" class="fb-kind-tab ${form.key === activeFormKey ? 'is-active' : ''}" data-fb-kind="${form.key}">${fbEscape(form.label || '（名前未設定）')}</button>`).join('') || '<p class="empty-text">フォームがありません。「＋ 新しいフォームを追加」から作成してください。</p>';
+  if (!state) { $('#fb-blocks').innerHTML = ''; $('#fb-intro').value = ''; $('#fb-outro').value = ''; $('#fb-label').value = ''; $('#fb-description').value = ''; return; }
+  $('#fb-label').value = state.label;
+  $('#fb-description').value = state.description;
   $('#fb-intro').value = state.intro;
   $('#fb-outro').value = state.outro;
   $('#fb-blocks').innerHTML = state.blocks.map((block, index) => renderFormBuilderBlock(block, index, state.blocks.length)).join('') || '<p class="empty-text">まだ質問がありません。「＋ 質問を追加」から作成できます。</p>';
-  document.querySelectorAll('.fb-kind-tab').forEach((tab) => tab.classList.toggle('is-active', tab.dataset.fbKind === activeFormKind));
   $('#fb-message').textContent = '';
 }
 
-function findFbBlock(uid) { return formBuilderState[activeFormKind].blocks.find((block) => block.uid === uid); }
+function findFbBlock(uid) { return currentForm()?.blocks.find((block) => block.uid === uid); }
 
 async function initFormBuilder() {
   if (!db) return;
@@ -253,27 +287,47 @@ async function initFormBuilder() {
     if (kindTab) {
       // 未保存の入力を state に反映してから切り替える（意図せず消えないように）
       syncFormBuilderFieldsToState();
-      activeFormKind = kindTab.dataset.fbKind;
-      if (!formBuilderState[activeFormKind]) await loadFormBuilderKind(activeFormKind);
+      activeFormKey = kindTab.dataset.fbKind;
       renderFormBuilder();
+      return;
+    }
+    if (event.target.id === 'fb-add-form') {
+      syncFormBuilderFieldsToState();
+      const label = prompt('新しいフォームの名前を入力してください（例：ボイス収録の依頼）');
+      if (!label || !label.trim()) return;
+      const newForm = { key: fbFormKey(), label: label.trim(), description: '', intro: '', outro: '', blocks: [] };
+      requestForms.push(newForm);
+      activeFormKey = newForm.key;
+      renderFormBuilder();
+      return;
+    }
+    if (event.target.id === 'fb-delete-form') {
+      const state = currentForm();
+      if (!state) return;
+      if (requestForms.length <= 1) { alert('フォームは最低1つ必要なため、これ以上削除できません。'); return; }
+      if (!confirm(`「${state.label || '（名前未設定）'}」を削除します。よろしいですか？\n（すでに届いている回答は消えず、そのまま見られます）`)) return;
+      requestForms = requestForms.filter((form) => form.key !== activeFormKey);
+      activeFormKey = requestForms[0].key;
+      renderFormBuilder();
+      saveFormBuilder();
       return;
     }
     if (event.target.id === 'fb-add-question') {
       syncFormBuilderFieldsToState();
-      formBuilderState[activeFormKind].blocks.push({ uid: fbUid(), type: 'text', label: '', helper: '', required: false, options: [] });
+      currentForm().blocks.push({ uid: fbUid(), type: 'text', label: '', helper: '', required: false, options: [] });
       renderFormBuilder();
       return;
     }
     if (event.target.id === 'fb-add-section') {
       syncFormBuilderFieldsToState();
-      formBuilderState[activeFormKind].blocks.push({ uid: fbUid(), type: 'section', title: '', english: '' });
+      currentForm().blocks.push({ uid: fbUid(), type: 'section', title: '', english: '' });
       renderFormBuilder();
       return;
     }
     const removeButton = event.target.closest('[data-fb-remove]');
     if (removeButton) {
       syncFormBuilderFieldsToState();
-      const state = formBuilderState[activeFormKind];
+      const state = currentForm();
       state.blocks = state.blocks.filter((block) => block.uid !== removeButton.dataset.fbRemove);
       renderFormBuilder();
       return;
@@ -282,7 +336,7 @@ async function initFormBuilder() {
     if (moveButton) {
       syncFormBuilderFieldsToState();
       const [uid, dir] = moveButton.dataset.fbMove.split(':');
-      const state = formBuilderState[activeFormKind];
+      const state = currentForm();
       const i = state.blocks.findIndex((block) => block.uid === uid);
       const j = i + Number(dir);
       if (i >= 0 && j >= 0 && j < state.blocks.length) { [state.blocks[i], state.blocks[j]] = [state.blocks[j], state.blocks[i]]; }
@@ -323,14 +377,16 @@ async function initFormBuilder() {
     }
   });
 
-  await loadFormBuilderKind('illustration');
+  await loadRequestForms();
   renderFormBuilder();
 }
 
 // 直接DOMに入力された内容（テキスト欄）を、再描画の前に state へ書き戻す
 function syncFormBuilderFieldsToState() {
-  const state = formBuilderState[activeFormKind];
+  const state = currentForm();
   if (!state) return;
+  state.label = $('#fb-label')?.value ?? state.label;
+  state.description = $('#fb-description')?.value ?? state.description;
   state.intro = $('#fb-intro')?.value ?? state.intro;
   state.outro = $('#fb-outro')?.value ?? state.outro;
   document.querySelectorAll('[data-fb-field]').forEach((el) => {
@@ -350,14 +406,12 @@ function syncFormBuilderFieldsToState() {
 
 async function saveFormBuilder() {
   syncFormBuilderFieldsToState();
-  const state = formBuilderState[activeFormKind];
-  const payload = {
-    intro: state.intro,
-    outro: state.outro,
-    blocks: state.blocks.map(({ uid, ...rest }) => rest)
-  };
+  const payload = requestForms.map(({ key, label, description, intro, outro, blocks }) => ({
+    key, label, description, intro, outro,
+    blocks: blocks.map(({ uid, ...rest }) => rest)
+  }));
   try {
-    const { error } = await db.from('site_settings').upsert({ key: `${activeFormKind}_form_config`, value: JSON.stringify(payload) });
+    const { error } = await db.from('site_settings').upsert({ key: 'request_forms', value: JSON.stringify(payload) });
     if (error) throw error;
     $('#fb-message').textContent = '保存しました！';
     $('#fb-message').style.color = '#579578';

@@ -647,3 +647,9 @@
 .serial-copy-button{border:0;cursor:pointer;background:var(--soft-pink);color:var(--hot);font-size:11px;padding:5px 9px;border-radius:8px;white-space:nowrap;transition:background .15s}
 .serial-copy-button:hover{background:#ffd9e6}
 #od-serial-copy{margin-left:-4px}
+
+/* ===== 追加機能：依頼フォームの追加・削除UI ===== */
+.fb-form-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.od-mini-button.is-danger{background:#ffe1e1;color:#c1493f}
+.fb-intro-outro label{font-size:9px;font-weight:700;color:#a58798}
+.fb-intro-outro input{width:100%;margin-top:5px;border:1px solid #ead3dd;border-radius:10px;padding:10px 12px;font:13px var(--round);color:var(--ink)}

@@ -10,9 +10,11 @@ function textToParagraphs(text) {
 }
 
 /* ===== 既定の内容（管理画面でまだ何も保存されていないときに使われます） ===== */
-const DEFAULT_CONFIGS = {
-  illustration: {
+const DEFAULT_FORMS = [
+  {
+    key: 'illustration',
     label: 'イラスト制作',
+    description: 'キャラクターデザイン・イラストについてお伺いします',
     intro: `この度はキャラクターデザインのご依頼をご検討いただき、ありがとうございます🙇🏻‍♀️
 
 できるだけ詳しくご記入いただくことで、イメージに沿ったキャラクターデザインを制作しやすくなります。「こんなキャラクターにしたい！」というイメージがありましたら、ぜひ詳しく教えてください！
@@ -52,8 +54,10 @@ const DEFAULT_CONFIGS = {
       { type: 'text', label: 'お返事しやすい時間帯', helper: 'いつでも大丈夫な場合は空欄で大丈夫です。', required: false }
     ]
   },
-  parts: {
+  {
+    key: 'parts',
     label: 'パーツ分け制作',
+    description: '完成イラストのパーツ分けについてお伺いします',
     intro: `この度はパーツ分け（Live2D用のパーツ分け）のご依頼をご検討いただき、ありがとうございます🙇🏻‍♀️
 
 すでに完成しているイラストを、動かせる形にパーツごとに分けていく工程です。以下の項目にご回答いただくことで、ご希望に沿った可動域や仕上がりにしやすくなります。
@@ -77,23 +81,37 @@ const DEFAULT_CONFIGS = {
       { type: 'text', label: 'お返事しやすい時間帯', helper: 'いつでも大丈夫な場合は空欄で大丈夫です。', required: false }
     ]
   }
-};
+];
 
-let formConfigs = { illustration: null, parts: null };
-let currentKind = null;
+let requestFormsCache = null;
+let currentFormKey = null;
 let currentQuestions = [];
 let currentSerial = '';
 let uploadedImages = {};
 
-async function getFormConfig(kind) {
-  if (formConfigs[kind]) return formConfigs[kind];
-  const fallback = DEFAULT_CONFIGS[kind];
-  if (!db) { formConfigs[kind] = fallback; return fallback; }
-  const { data } = await db.from('site_settings').select('value').eq('key', `${kind}_form_config`).maybeSingle();
-  let parsed = null;
-  if (data?.value) { try { parsed = JSON.parse(data.value); } catch (error) { parsed = null; } }
-  formConfigs[kind] = (parsed && Array.isArray(parsed.blocks) && parsed.blocks.length) ? parsed : fallback;
-  return formConfigs[kind];
+async function getRequestForms() {
+  if (requestFormsCache) return requestFormsCache;
+  if (!db) { requestFormsCache = DEFAULT_FORMS; return requestFormsCache; }
+  const { data } = await db.from('site_settings').select('key,value').in('key', ['request_forms', 'illustration_form_config', 'parts_form_config']);
+  const map = Object.fromEntries((data || []).map((row) => [row.key, row.value]));
+  if (map.request_forms) {
+    try {
+      const parsed = JSON.parse(map.request_forms);
+      if (Array.isArray(parsed)) { requestFormsCache = parsed; return requestFormsCache; }
+    } catch (error) { /* 壊れていた場合は下の移行処理にフォールバック */ }
+  }
+  // 旧形式（イラスト・パーツ分けの2つ固定）からの自動移行
+  const migrated = [];
+  ['illustration_form_config', 'parts_form_config'].forEach((oldKey, index) => {
+    if (!map[oldKey]) return;
+    try {
+      const parsed = JSON.parse(map[oldKey]);
+      const base = DEFAULT_FORMS[index];
+      migrated.push({ key: base.key, label: base.label, description: base.description, intro: parsed.intro || base.intro, outro: parsed.outro || base.outro, blocks: Array.isArray(parsed.blocks) && parsed.blocks.length ? parsed.blocks : base.blocks });
+    } catch (error) { /* 無視して既定を使う */ }
+  });
+  requestFormsCache = migrated.length ? migrated : DEFAULT_FORMS;
+  return requestFormsCache;
 }
 
 function blocksToSections(blocks) {
@@ -158,18 +176,24 @@ function renderSection(section, index) {
 }
 
 async function showKindChoice() {
-  const [illust, parts] = await Promise.all([getFormConfig('illustration'), getFormConfig('parts')]);
-  $('#ireq-kind-illust-label').textContent = illust.label || 'イラスト制作';
-  $('#ireq-kind-parts-label').textContent = parts.label || 'パーツ分け制作';
+  const forms = await getRequestForms();
+  const box = $('#ireq-kind-choices');
+  if (!forms.length) {
+    box.innerHTML = '<p class="ireq-lead">現在ご利用いただける依頼フォームがありません。お手数ですが、公式XまたはDiscordまで直接ご連絡ください。</p>';
+  } else {
+    box.innerHTML = forms.map((form) => `<button type="button" class="ireq-kind-card" data-form-key="${escapeHtml(form.key)}"><b>${escapeHtml(form.label)}</b><span>${escapeHtml(form.description || '')}</span></button>`).join('');
+  }
   $('#ireq-code-step').hidden = true;
   $('#ireq-kind-step').hidden = false;
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-async function openForm(kind) {
-  currentKind = kind;
+async function openForm(key) {
+  const forms = await getRequestForms();
+  const config = forms.find((form) => form.key === key);
+  if (!config) return;
+  currentFormKey = key;
   uploadedImages = {};
-  const config = await getFormConfig(kind);
   const sections = blocksToSections(config.blocks);
   currentQuestions = sections.flatMap((section) => section.questions);
   $('#ireq-intro').innerHTML = textToParagraphs(config.intro);
@@ -234,14 +258,15 @@ function collectAnswers(form) {
 }
 
 /* ===== 追加機能：回答が届いたらDiscordへ通知 ===== */
-async function notifyDiscord(kind, serial) {
+async function notifyDiscord(key, serial) {
   if (!db) return;
   const { data } = await db.from('site_settings').select('key,value').in('key', ['discord_webhook_url', 'discord_notify_enabled']);
   const map = Object.fromEntries((data || []).map((row) => [row.key, row.value]));
   const url = map.discord_webhook_url;
   const enabled = String(map.discord_notify_enabled ?? true) !== 'false';
   if (!url || !enabled) return;
-  const kindLabel = kind === 'parts' ? 'パーツ分け制作' : 'イラスト制作';
+  const forms = await getRequestForms();
+  const kindLabel = forms.find((form) => form.key === key)?.label || key;
   const content = `📋 依頼フォームの回答が届きました\n種類：${kindLabel}\nお客様コード：${serial}\n\n依頼BOXの「依頼票」タブからご確認ください。`;
   try {
     await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content }) });
@@ -257,7 +282,7 @@ async function handleAnswerSubmit(event) {
   if (confirmBox && !confirmBox.checked) { message.textContent = '送信前に「入力内容を確認しました」にチェックをお願いします。'; confirmBox.closest('.ireq-confirm-row')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
   const answers = collectAnswers(form);
   message.textContent = '送信中…';
-  const { error } = await db.from('illustration_requests').insert({ serial: currentSerial, answers, form_type: currentKind });
+  const { error } = await db.from('illustration_requests').insert({ serial: currentSerial, answers, form_type: currentFormKey });
   if (error) {
     if (/form_type/.test(error.message)) {
       // supabase/parts-request.sql が未実行の環境でも送信できるようにする
@@ -268,7 +293,7 @@ async function handleAnswerSubmit(event) {
       return;
     }
   }
-  notifyDiscord(currentKind, currentSerial);
+  notifyDiscord(currentFormKey, currentSerial);
   $('#ireq-form-step').hidden = true;
   $('#ireq-done-step').hidden = false;
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -305,8 +330,7 @@ async function handleImageUpload(input) {
 function init() {
   $('#ireq-code-form').addEventListener('submit', handleCodeSubmit);
   $('#ireq-answer-form').addEventListener('submit', handleAnswerSubmit);
-  $('#ireq-kind-illust').addEventListener('click', () => openForm('illustration'));
-  $('#ireq-kind-parts').addEventListener('click', () => openForm('parts'));
+  $('#ireq-kind-choices').addEventListener('click', (event) => { const card = event.target.closest('[data-form-key]'); if (card) openForm(card.dataset.formKey); });
   $('#ireq-kind-back').addEventListener('click', () => { $('#ireq-kind-step').hidden = true; $('#ireq-code-step').hidden = false; });
   $('#ireq-questions').addEventListener('change', (event) => {
     if (event.target.matches('[data-image-question]')) handleImageUpload(event.target);
