@@ -1,5 +1,5 @@
 const fallbackData = {
-  settings: { coupon_percent: 30, coupon_enabled: true, coupon_label: '今なら誰でも使えるクーポンあり！', contact_email: 'hello@example.com', hero_title: 'ぴのきー。へようこそ！', hero_subtitle: 'ここにあなたの看板モデルを掲載できます', hero_media_url: '', hero_media_type: 'image', illustration_price_min: 30000, illustration_price_max: 50000, chardesign_enabled: true, chardesign_price_min: 10000, chardesign_price_max: 30000, illustration_label: 'イラスト制作', chardesign_label: 'キャラクターデザイン', illustration_toggle_text: 'イラスト制作をお願いしたい', chardesign_toggle_text: 'キャラクターデザインをお願いしたい', illustration_desc: '', chardesign_desc: '', booking_open: true, booking_closed_note: 'ただいま新規のご依頼受付をお休みしています。再開まで少々お待ちください。', discord_webhook_url: '', discord_notify_enabled: true, contact_note_x: '', contact_note_discord: '',
+  settings: { coupon_percent: 30, coupon_enabled: true, coupon_label: '今なら誰でも使えるクーポンあり！', contact_email: 'hello@example.com', hero_title: 'ぴのきー。へようこそ！', hero_subtitle: 'ここにあなたの看板モデルを掲載できます', hero_media_url: '', hero_media_type: 'image', illustration_price_min: 30000, illustration_price_max: 50000, chardesign_enabled: true, chardesign_price_min: 10000, chardesign_price_max: 30000, illustration_label: 'イラスト制作', chardesign_label: 'キャラクターデザイン', illustration_toggle_text: 'イラスト制作をお願いしたい', chardesign_toggle_text: 'キャラクターデザインをお願いしたい', illustration_desc: '', chardesign_desc: '', parts_ready_label: 'パーツ分け済みイラスト', parts_ready_toggle_text: 'パーツ分けされたイラストがあります', parts_ready_desc: '', booking_open: true, booking_closed_note: 'ただいま新規のご依頼受付をお休みしています。再開まで少々お待ちください。', discord_webhook_url: '', discord_notify_enabled: true, contact_note_x: '', contact_note_discord: '',
   addon_customization_text: `・Live2Dモデルに衣装を追加したい
 ・既存モデルの髪型を変更したい
 ・髪色や目の色を変更したい
@@ -102,6 +102,13 @@ function setHero() {
   if (illustDesc) { illustDesc.textContent = s.illustration_desc || ''; illustDesc.hidden = !s.illustration_desc; }
   const chardesDesc = document.getElementById('chardesign-desc');
   if (chardesDesc) { chardesDesc.textContent = s.chardesign_desc || ''; chardesDesc.hidden = !s.chardesign_desc; }
+  const partsReadyLabel = s.parts_ready_label || 'パーツ分け済みイラスト';
+  const partsReadyLegend = document.getElementById('parts-ready-legend-text');
+  if (partsReadyLegend) partsReadyLegend.textContent = partsReadyLabel;
+  const partsReadyToggleText = document.getElementById('parts-ready-toggle-text');
+  if (partsReadyToggleText) partsReadyToggleText.textContent = s.parts_ready_toggle_text || 'パーツ分けされたイラストがあります';
+  const partsReadyDesc = document.getElementById('parts-ready-desc');
+  if (partsReadyDesc) { partsReadyDesc.textContent = s.parts_ready_desc || ''; partsReadyDesc.hidden = !s.parts_ready_desc; }
   applyBookingState();
   const miniCoupon = document.querySelector('.mini-coupon');
   if (miniCoupon) {
@@ -163,6 +170,7 @@ function collectEstimate() {
   const chardesignOn = String(appData.settings.chardesign_enabled ?? true) !== 'false';
   const illustChecked = Boolean(document.getElementById('illustration-toggle')?.checked);
   const chardesChecked = chardesignOn && Boolean(document.getElementById('chardesign-toggle')?.checked);
+  const partsReadyChecked = Boolean(document.getElementById('parts-ready-toggle')?.checked);
   let hasQuote = false;
   let subtotal = Number(plan?.price || 0) + Number(motion?.price || 0);
   if (illustChecked) subtotal += Number(appData.settings.illustration_price_min || 0);
@@ -171,7 +179,7 @@ function collectEstimate() {
   const selectedOptions = [...document.querySelectorAll('input[name="options"]:checked')].map((el) => appData.options.find((item) => String(item.id) === el.value)?.name).filter(Boolean);
   const couponOn = String(appData.settings.coupon_enabled ?? true) !== 'false';
   const discount = couponOn ? Math.round(subtotal * (Number(appData.settings.coupon_percent || 0) / 100)) : 0;
-  return { plan, motion, chardesignOn, illustChecked, chardesChecked, selectedOptions, subtotal, discount, total: subtotal - discount, hasQuote, hasRange: illustChecked || chardesChecked };
+  return { plan, motion, chardesignOn, illustChecked, chardesChecked, partsReadyChecked, selectedOptions, subtotal, discount, total: subtotal - discount, hasQuote, hasRange: illustChecked || chardesChecked };
 }
 function updateEstimate() {
   const est = collectEstimate();
@@ -280,11 +288,11 @@ async function submitInquiry(event) {
   const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
   const serial = `PNK-${pad}-${rand}`;
   const contactMethod = values.contact_method || 'email';
-  const payload = { serial, request_name: values.request_name, contact_method: contactMethod, contact_id: values.contact_id || '', email: contactMethod === 'email' ? (values.contact_id || '') : '', message: values.message || '', plan: est.plan?.name || '', motion: est.motion?.name || '', options: est.selectedOptions.join('、'), total: est.total, illustration_needed: est.illustChecked, chardesign_needed: est.chardesChecked };
+  const payload = { serial, request_name: values.request_name, contact_method: contactMethod, contact_id: values.contact_id || '', email: contactMethod === 'email' ? (values.contact_id || '') : '', message: values.message || '', plan: est.plan?.name || '', motion: est.motion?.name || '', options: est.selectedOptions.join('、'), total: est.total, illustration_needed: est.illustChecked, chardesign_needed: est.chardesChecked, parts_illustration_ready: est.partsReadyChecked };
   let { error } = await db.from('inquiries').insert(payload);
-  if (error && /illustration_needed|chardesign_needed|column/i.test(error.message)) {
-    // supabase/request-scope.sql が未実行の環境でも、他の項目だけは送信できるようにする
-    const { illustration_needed, chardesign_needed, ...fallbackPayload } = payload;
+  if (error && /illustration_needed|chardesign_needed|parts_illustration_ready|column/i.test(error.message)) {
+    // supabase/request-scope.sql・parts-illustration-ready.sql が未実行の環境でも、他の項目だけは送信できるようにする
+    const { illustration_needed, chardesign_needed, parts_illustration_ready, ...fallbackPayload } = payload;
     ({ error } = await db.from('inquiries').insert(fallbackPayload));
   }
   if (error) { messageEl.textContent = `送信できませんでした：${error.message}`; messageEl.style.color = '#c14978'; return; }
