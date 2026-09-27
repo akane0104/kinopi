@@ -683,3 +683,7 @@
 
 /* ===== 追加機能：お客様が選んだお支払い方法の表示 ===== */
 .payment-method-badge{display:inline-block;padding:6px 12px;border-radius:99px;background:var(--lav);color:var(--purple);font:700 10px var(--round);white-space:nowrap}
+
+/* ===== 追加機能：依頼内容・ヒアリング内容まとめの入力欄を大きく ===== */
+.dash-textarea-lg{width:100%;padding:14px 16px;font-size:13px;line-height:1.8;border-radius:12px;border:1px solid #ead3dd;resize:vertical;min-height:90px}
+.dash-textarea-lg:focus{border-color:var(--hot);box-shadow:0 0 0 3px #ffe5ef;outline:0}
