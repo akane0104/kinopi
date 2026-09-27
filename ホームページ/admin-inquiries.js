@@ -148,9 +148,16 @@ function renderUrlCopyList() {
 }
 
 async function editSiteBaseUrl() {
-  const next = prompt('サイトの公開URLを入力してください（例：https://kinopi.vercel.app）\n\n※この設定は「ホームページ」〜「特定商取引法」の4つのURLすべてに使われます。', siteBaseUrl || 'https://');
+  const next = prompt('サイトの公開URLを入力してください（例：https://kinopi.vercel.app）\n\n※この設定は「ホームページ」〜「特定商取引法」の4つのURLすべてに使われます。パスや「?」以降は自動で取り除かれます。', siteBaseUrl || 'https://');
   if (next === null) return;
-  const trimmed = next.trim().replace(/\/+$/, '');
+  let trimmed = next.trim().replace(/\/+$/, '');
+  try {
+    const parsed = new URL(trimmed);
+    trimmed = parsed.origin; // ドメイン部分だけを残す（パスや ?utm_source=... などのおまけを自動で削除）
+  } catch (error) {
+    alert('URLの形式が正しくありません（例：https://kinopi.vercel.app のように入力してください）');
+    return;
+  }
   const { error } = await db.from('site_settings').upsert({ key: 'site_base_url', value: trimmed });
   if (error) { alert(`保存できませんでした：${error.message}`); return; }
   siteBaseUrl = trimmed;
