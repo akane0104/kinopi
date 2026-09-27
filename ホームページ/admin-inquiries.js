@@ -136,11 +136,54 @@ function renderUrlCopyList() {
   const box = $('#od-url-list');
   if (!box) return;
   const base = siteBaseUrl || 'https://example.com';
-  const pages = [...URL_COPY_PAGES, ...parseUrlCopyExtra(urlCopyExtraRaw)];
+  const builtIn = URL_COPY_PAGES.map((page) => ({ ...page, isBuiltIn: true }));
+  const extra = parseUrlCopyExtra(urlCopyExtraRaw).map((page, index) => ({ ...page, isBuiltIn: false, extraIndex: index }));
+  const pages = [...builtIn, ...extra];
   box.innerHTML = pages.map((page) => {
     const url = /^https?:\/\//.test(page.path) ? page.path : (page.path ? `${base}/${page.path}` : `${base}/`);
-    return `<div class="url-copy-row"><b>${escapeHtml(page.label)}</b><span>${escapeHtml(url)}</span><button type="button" class="od-mini-button" data-copy-url="${escapeHtml(url)}">コピー</button></div>`;
-  }).join('') + (siteBaseUrl ? '' : '<p class="od-hint">「基本設定・トップ表示」で「サイトの公開URL」を設定すると、正しいURLがここに表示されます（今はサンプルのURLです）。</p>');
+    const editAttr = page.isBuiltIn ? 'data-edit-base-url="true"' : `data-edit-extra-url="${page.extraIndex}"`;
+    return `<div class="url-copy-row"><b>${escapeHtml(page.label)}</b><span>${escapeHtml(url)}</span><div class="url-copy-actions"><button type="button" class="od-mini-button" data-copy-url="${escapeHtml(url)}">コピー</button><button type="button" class="od-mini-button is-ghost" ${editAttr}>編集</button></div></div>`;
+  }).join('') + (siteBaseUrl ? '' : '<p class="od-hint">「サイトの公開URL」が未設定のため、サンプルのURLを表示しています。下の「編集」からその場で設定できます。</p>');
+}
+
+async function editSiteBaseUrl() {
+  const next = prompt('サイトの公開URLを入力してください（例：https://kinopi.vercel.app）', siteBaseUrl || 'https://');
+  if (next === null) return;
+  const trimmed = next.trim().replace(/\/+$/, '');
+  const { error } = await db.from('site_settings').upsert({ key: 'site_base_url', value: trimmed });
+  if (error) { alert(`保存できませんでした：${error.message}`); return; }
+  siteBaseUrl = trimmed;
+  renderUrlCopyList();
+}
+
+async function addExtraUrl() {
+  const next = prompt('表示名｜パスまたはフルURL の形式で入力してください\n例：X（旧Twitter）|https://x.com/Qinopy0104\n例：体験版フォーム|sample-form.html');
+  if (next === null || !next.trim()) return;
+  const [label, path] = next.split('|');
+  if (!label || !path) { alert('「表示名｜URL」の形式で入力してください。'); return; }
+  const list = parseUrlCopyExtra(urlCopyExtraRaw);
+  list.push({ label: label.trim(), path: path.trim() });
+  const raw = list.map((item) => `${item.label}|${item.path}`).join('\n');
+  const { error } = await db.from('site_settings').upsert({ key: 'url_copy_extra', value: raw });
+  if (error) { alert(`保存できませんでした：${error.message}`); return; }
+  urlCopyExtraRaw = raw;
+  renderUrlCopyList();
+}
+async function editExtraUrl(index) {
+  const list = parseUrlCopyExtra(urlCopyExtraRaw);
+  const current = list[index];
+  const next = prompt('表示名｜パスまたはフルURL の形式で入力してください（空欄にすると削除されます）', current ? `${current.label}|${current.path}` : '');
+  if (next === null) return;
+  if (!next.trim()) { list.splice(index, 1); } else {
+    const [label, path] = next.split('|');
+    if (!label || !path) { alert('「表示名｜URL」の形式で入力してください。'); return; }
+    list[index] = { label: label.trim(), path: path.trim() };
+  }
+  const raw = list.map((item) => `${item.label}|${item.path}`).join('\n');
+  const { error } = await db.from('site_settings').upsert({ key: 'url_copy_extra', value: raw });
+  if (error) { alert(`保存できませんでした：${error.message}`); return; }
+  urlCopyExtraRaw = raw;
+  renderUrlCopyList();
 }
 
 async function copyUrlToClipboard(url, button) {
@@ -168,7 +211,28 @@ async function saveMessageTemplates(list) {
 function renderTemplatesPanel(item) {
   const box = $('#od-template-list');
   if (!box) return;
-  box.innerHTML = messageTemplates.map((tpl, index) => `<div class="tmpl-item"><b>${escapeHtml(tpl.label)}</b><div class="tmpl-item-actions"><button type="button" class="od-mini-button" data-tmpl-copy="${index}">コピーする</button><button type="button" class="od-mini-button is-ghost" data-tmpl-edit="${index}">編集</button></div></div>`).join('') || '<p class="od-hint">まだ定型文がありません。「＋ 新しいテンプレ文を追加」から作成できます。</p>';
+  const total = messageTemplates.length;
+  box.innerHTML = messageTemplates.map((tpl, index) => `<div class="tmpl-item">
+    <div class="tmpl-move-buttons">
+      <button type="button" class="tmpl-move-button" data-tmpl-move="${index}:-1" ${index === 0 ? 'disabled' : ''} title="上へ">↑</button>
+      <button type="button" class="tmpl-move-button" data-tmpl-move="${index}:1" ${index === total - 1 ? 'disabled' : ''} title="下へ">↓</button>
+    </div>
+    <b>${escapeHtml(tpl.label)}</b>
+    <div class="tmpl-item-actions"><button type="button" class="od-mini-button" data-tmpl-copy="${index}">コピーする</button><button type="button" class="od-mini-button is-ghost" data-tmpl-edit="${index}">編集</button></div>
+  </div>`).join('') || '<p class="od-hint">まだ定型文がありません。「＋ 新しいテンプレ文を追加」から作成できます。</p>';
+}
+
+async function moveMessageTemplate(index, direction) {
+  const j = index + direction;
+  if (j < 0 || j >= messageTemplates.length) return;
+  const list = messageTemplates.slice();
+  [list[index], list[j]] = [list[j], list[index]];
+  try {
+    await saveMessageTemplates(list);
+    renderTemplatesPanel();
+  } catch (error) {
+    alert(`並び替えを保存できませんでした：${error.message}`);
+  }
 }
 
 function openTmplMsgDialog(index) {
@@ -350,7 +414,7 @@ function isActive(item) { return !['completed', 'cancelled', 'delivered'].includ
 /* ===== 追加機能：あとからオプションを追加できるようにする ===== */
 let catalogOptions = [];
 let catalogFees = { illustration: 0, chardesign: 0 };
-let scopeLabels = { illustration: 'イラスト制作', chardesign: 'キャラクターデザイン' };
+let scopeLabels = { illustration: 'イラスト制作', chardesign: 'キャラクターデザイン', partsReady: 'パーツ分け済みイラスト' };
 let siteBaseUrl = '';
 let requestFormLabels = null;
 
@@ -376,7 +440,7 @@ async function loadCatalog() {
   if (!db) return;
   const [optionsRes, settingsRes] = await Promise.all([
     db.from('options').select('*').eq('active', true).order('sort_order'),
-    db.from('site_settings').select('key,value').in('key', ['illustration_price_min', 'chardesign_price_min', 'illustration_label', 'chardesign_label', 'discord_webhook_url', 'discord_notify_enabled', 'site_base_url', 'url_copy_extra'])
+    db.from('site_settings').select('key,value').in('key', ['illustration_price_min', 'chardesign_price_min', 'illustration_label', 'chardesign_label', 'parts_ready_label', 'discord_webhook_url', 'discord_notify_enabled', 'site_base_url', 'url_copy_extra'])
   ]);
   catalogOptions = optionsRes.data || [];
   const settingsMap = Object.fromEntries((settingsRes.data || []).map((row) => [row.key, row.value]));
@@ -384,6 +448,7 @@ async function loadCatalog() {
   catalogFees.chardesign = Number(settingsMap.chardesign_price_min || 0);
   scopeLabels.illustration = settingsMap.illustration_label || 'イラスト制作';
   scopeLabels.chardesign = settingsMap.chardesign_label || 'キャラクターデザイン';
+  scopeLabels.partsReady = settingsMap.parts_ready_label || 'パーツ分け済みイラスト';
   discordSettings.url = settingsMap.discord_webhook_url || '';
   discordSettings.enabled = String(settingsMap.discord_notify_enabled ?? true) !== 'false';
   siteBaseUrl = (settingsMap.site_base_url || '').replace(/\/+$/, '');
@@ -391,6 +456,7 @@ async function loadCatalog() {
   renderUrlCopyList();
   document.querySelectorAll('[data-illust-label]').forEach((el) => { el.textContent = scopeLabels.illustration; });
   document.querySelectorAll('[data-chardes-label]').forEach((el) => { el.textContent = scopeLabels.chardesign; });
+  document.querySelectorAll('[data-parts-ready-label]').forEach((el) => { el.textContent = scopeLabels.partsReady; });
 }
 
 /* ===== 追加機能：ステータス変更時のDiscord通知 ===== */
@@ -460,6 +526,8 @@ function scopeTags(item) {
   if (item.motion) tags.push({ label: item.motion, cls: 'scope-motion' });
   tags.push(scopeYesNoTag(scopeLabels.illustration, item.illustration_needed));
   tags.push(scopeYesNoTag(scopeLabels.chardesign, item.chardesign_needed));
+  if (item.parts_illustration_ready === true) tags.push({ label: `${scopeLabels.partsReady}：あり`, cls: 'scope-yes' });
+  if (item.parts_illustration_ready === false) tags.push({ label: `${scopeLabels.partsReady}：なし`, cls: 'scope-no' });
   if (item.options) tags.push({ label: `オプション：${item.options}`, cls: 'scope-option' });
   return tags;
 }
@@ -718,7 +786,7 @@ const COLUMN_SQL_FILE = {
   revision_limit: 'order-management.sql', revision_used: 'order-management.sql', payment_status: 'order-management.sql', paid_amount: 'order-management.sql',
   paid_date: 'order-management.sql', progress_steps: 'order-management.sql', spec: 'order-management.sql', files: 'order-management.sql', awaiting_since: 'order-management.sql',
   related_inquiry_id: 'process-management.sql', related_task_id: 'process-management.sql', consult_status: 'process-management.sql', extra_fee: 'process-management.sql', extra_count: 'process-management.sql',
-  illustration_needed: 'request-scope.sql', chardesign_needed: 'request-scope.sql', expressions_needed: 'expression-catalog.sql'
+  illustration_needed: 'request-scope.sql', chardesign_needed: 'request-scope.sql', expressions_needed: 'expression-catalog.sql', parts_illustration_ready: 'parts-illustration-ready.sql'
 };
 
 function missingColumnName(text) {
@@ -954,6 +1022,7 @@ function openDetail(id) {
   $('#od-options').value = item.options || '';
   $('#od-illust-needed').checked = item.illustration_needed === true;
   $('#od-chardes-needed').checked = item.chardesign_needed === true;
+  $('#od-parts-ready').checked = item.parts_illustration_ready === true;
   fillCatalogSelect();
   const extras = extrasOf(item);
   const baseAmount = Number(item.base_amount || 0) > 0 ? Number(item.base_amount) : Math.max(Number(item.total || 0) - extras.reduce((sum, extra) => sum + Number(extra.fee || 0), 0), 0);
@@ -990,6 +1059,7 @@ async function saveDetail() {
     options: $('#od-options').value,
     illustration_needed: $('#od-illust-needed').checked,
     chardesign_needed: $('#od-chardes-needed').checked,
+    parts_illustration_ready: $('#od-parts-ready').checked,
     base_amount: Number($('#od-base').value || 0),
     extra_items: readExtras(),
     payment_status: $('#od-payment').value,
@@ -1088,9 +1158,15 @@ document.addEventListener('click', async (event) => {
   if (event.target.closest('#order-file-upload')) { uploadOrderFile(); return; }
   const urlCopyButton = event.target.closest('[data-copy-url]');
   if (urlCopyButton) { copyUrlToClipboard(urlCopyButton.dataset.copyUrl, urlCopyButton); return; }
+  if (event.target.closest('[data-edit-base-url]')) { editSiteBaseUrl(); return; }
+  const extraEditButton = event.target.closest('[data-edit-extra-url]');
+  if (extraEditButton) { editExtraUrl(Number(extraEditButton.dataset.editExtraUrl)); return; }
+  if (event.target.id === 'url-copy-add') { addExtraUrl(); return; }
   const textCopyButton = event.target.closest('[data-copy-text]');
   if (textCopyButton) { event.preventDefault(); copyUrlToClipboard(textCopyButton.dataset.copyText, textCopyButton); return; }
   if (event.target.closest('#od-serial-copy')) { copyUrlToClipboard($('#od-serial').textContent, event.target.closest('#od-serial-copy')); return; }
+  const tmplMove = event.target.closest('[data-tmpl-move]');
+  if (tmplMove) { const [idx, dir] = tmplMove.dataset.tmplMove.split(':'); moveMessageTemplate(Number(idx), Number(dir)); return; }
   const tmplCopy = event.target.closest('[data-tmpl-copy]');
   if (tmplCopy) { const item = currentDetailItem(); if (item) copyTemplate(Number(tmplCopy.dataset.tmplCopy), item, tmplCopy); return; }
   const tmplEdit = event.target.closest('[data-tmpl-edit]');
@@ -1200,11 +1276,12 @@ document.addEventListener('change', (event) => {
   if (event.target.id === 'od-status') { const item = currentDetailItem(); if (item) refreshCurrentStage(item); }
   if (event.target.id === 'od-due') { const item = currentDetailItem(); if (item) refreshDueCountdown(item); }
   if (event.target.id === 'od-replied') { const item = currentDetailItem(); if (item) refreshRepliedBadge(item); }
-  if (event.target.id === 'od-illust-needed' || event.target.id === 'od-chardes-needed') {
+  if (event.target.id === 'od-illust-needed' || event.target.id === 'od-chardes-needed' || event.target.id === 'od-parts-ready') {
     const item = currentDetailItem();
     if (item) {
       item.illustration_needed = $('#od-illust-needed').checked;
       item.chardesign_needed = $('#od-chardes-needed').checked;
+      item.parts_illustration_ready = $('#od-parts-ready').checked;
       $('#od-scope-tags').innerHTML = scopeTagsHtml(item);
       refreshProgressBox(item);
     }

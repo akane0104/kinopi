@@ -86,6 +86,7 @@
                 <div class="dash-chip-row">
                   <label class="dash-chip-check"><input id="od-illust-needed" type="checkbox" /><span><span data-illust-label>イラスト制作</span></span></label>
                   <label class="dash-chip-check"><input id="od-chardes-needed" type="checkbox" /><span><span data-chardes-label>キャラクターデザイン</span></span></label>
+                  <label class="dash-chip-check"><input id="od-parts-ready" type="checkbox" /><span><span data-parts-ready-label>パーツ分け済みイラスト</span></span></label>
                 </div>
                 <div class="dash-divider"></div>
                 <div class="dash-grid-2">
@@ -182,13 +183,14 @@
               <div id="od-file-list" class="od-file-list"></div>
             </section>
             <section id="panel-templates" class="od-panel">
-              <div class="url-copy-box">
-                <h4>各種URLをコピー</h4>
-                <div id="od-url-list" class="url-copy-list"></div>
-              </div>
               <p class="od-hint">押すと、この依頼の内容を差し込んだ文面をコピーします。連絡方法に合わせてお使いください。「編集」から文面そのものを直接書き換えられます。</p>
               <div id="od-template-list" class="tmpl-list"></div>
               <button type="button" id="tmpl-msg-add" class="od-mini-button is-ghost">＋ 新しいテンプレ文を追加</button>
+              <div class="url-copy-box">
+                <h4>各種URLをコピー</h4>
+                <div id="od-url-list" class="url-copy-list"></div>
+                <button type="button" id="url-copy-add" class="od-mini-button is-ghost">＋ 新しいURLを追加</button>
+              </div>
             </section>
           </div>
           <footer class="od-foot">
