@@ -142,12 +142,13 @@ function renderUrlCopyList() {
   box.innerHTML = pages.map((page) => {
     const url = /^https?:\/\//.test(page.path) ? page.path : (page.path ? `${base}/${page.path}` : `${base}/`);
     const editAttr = page.isBuiltIn ? 'data-edit-base-url="true"' : `data-edit-extra-url="${page.extraIndex}"`;
-    return `<div class="url-copy-row"><b>${escapeHtml(page.label)}</b><span>${escapeHtml(url)}</span><div class="url-copy-actions"><button type="button" class="od-mini-button" data-copy-url="${escapeHtml(url)}">コピー</button><button type="button" class="od-mini-button is-ghost" ${editAttr}>編集</button></div></div>`;
-  }).join('') + (siteBaseUrl ? '' : '<p class="od-hint">「サイトの公開URL」が未設定のため、サンプルのURLを表示しています。下の「編集」からその場で設定できます。</p>');
+    const editLabel = page.isBuiltIn ? 'サイトURLを編集' : '編集';
+    return `<div class="url-copy-row ${page.isBuiltIn ? 'is-built-in' : ''}"><b>${escapeHtml(page.label)}</b><span>${escapeHtml(url)}</span><div class="url-copy-actions"><button type="button" class="od-mini-button" data-copy-url="${escapeHtml(url)}">コピー</button><button type="button" class="od-mini-button is-ghost" ${editAttr}>${editLabel}</button></div></div>`;
+  }).join('') + '<p class="od-hint">「ホームページ」〜「特定商取引法」の4つは、下の1つの「サイトの公開URL」から自動で作られています。どれか1つを編集すると、4つ全部が一緒に変わります。' + (siteBaseUrl ? '' : ' まだ設定されていないため、今はサンプルのURLが表示されています。') + '</p>';
 }
 
 async function editSiteBaseUrl() {
-  const next = prompt('サイトの公開URLを入力してください（例：https://kinopi.vercel.app）', siteBaseUrl || 'https://');
+  const next = prompt('サイトの公開URLを入力してください（例：https://kinopi.vercel.app）\n\n※この設定は「ホームページ」〜「特定商取引法」の4つのURLすべてに使われます。', siteBaseUrl || 'https://');
   if (next === null) return;
   const trimmed = next.trim().replace(/\/+$/, '');
   const { error } = await db.from('site_settings').upsert({ key: 'site_base_url', value: trimmed });
