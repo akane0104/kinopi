@@ -674,3 +674,6 @@
 .inquiry-card.st-delivered{border-left-color:#2f8f6b}
 .inquiry-card.st-completed{border-left-color:#3e9e63}
 .inquiry-card.st-cancelled{border-left-color:#b8b0bd}
+
+/* ===== 追加機能：依頼票のPSDファイル表示（画像プレビューできないため名前リンクにする） ===== */
+.illustform-file-badge{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;background:#fdf3f5;color:var(--hot);font:700 10px var(--round);text-decoration:none;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

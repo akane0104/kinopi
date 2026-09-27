@@ -947,7 +947,13 @@ async function renderIllustFormPanel(item) {
   box.innerHTML = data.map((entry) => {
     const rows = Object.entries(entry.answers || {}).filter(([, value]) => value && (!Array.isArray(value) || value.length)).map(([label, value]) => {
       const content = Array.isArray(value)
-        ? `<div class="illustform-image-row">${value.map((url) => `<a href="${escapeHtml(url)}" target="_blank" rel="noopener"><img src="${escapeHtml(url)}" alt="" /></a>`).join('')}</div>`
+        ? `<div class="illustform-image-row">${value.map((url) => {
+            const fileName = decodeURIComponent(url.split('/').pop() || '');
+            const isPsd = /\.psd$/i.test(fileName);
+            return isPsd
+              ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="illustform-file-badge">📄 ${escapeHtml(fileName.replace(/^\d+-[a-z0-9]+-/i, ''))}</a>`
+              : `<a href="${escapeHtml(url)}" target="_blank" rel="noopener"><img src="${escapeHtml(url)}" alt="" /></a>`;
+          }).join('')}</div>`
         : escapeHtml(value).replace(/\n/g, '<br>');
       return `<div class="illustform-row"><b>${escapeHtml(label)}</b><span>${content}</span></div>`;
     }).join('') || '<p class="od-hint">回答内容が空でした。</p>';

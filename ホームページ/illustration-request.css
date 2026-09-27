@@ -134,6 +134,9 @@
 .ireq-image-button:hover{background:#fdf3f5}
 .ireq-image-previews{display:flex;flex-wrap:wrap;gap:10px}
 .ireq-image-thumb{width:76px;height:76px;border-radius:10px;overflow:hidden;border:1px solid var(--ireq-border)}
+.ireq-image-thumb.is-file{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 4px;background:#fdf3f5;text-align:center}
+.ireq-file-icon{font-size:22px;line-height:1}
+.ireq-file-name{font-size:8px;color:var(--ireq-muted);line-height:1.3;word-break:break-all;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .ireq-image-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .ireq-image-status{margin:0;font-size:11px;color:var(--ireq-muted)}
 

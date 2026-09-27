@@ -153,8 +153,8 @@ function renderQuestion(q) {
     inputHtml = `<div class="ireq-choice-group">${(q.options || []).map((opt, oi) => `<label class="ireq-choice"><input type="checkbox" name="${q.id}" value="${escapeHtml(opt)}" data-multi="${q.id}" ${opt.trim() === 'その他' ? `data-other-toggle="${q.id}"` : ''} /><span>${escapeHtml(opt)}</span></label>`).join('')}</div>${hasOther ? `<input type="text" class="ireq-other-input" id="other-${q.id}" data-other-for="${q.id}" placeholder="具体的にご記入ください" hidden />` : ''}`;
   } else if (q.type === 'image') {
     inputHtml = `<div class="ireq-image-upload">
-      <label class="ireq-image-button" for="${bodyId}">📎 画像を選ぶ（複数可）</label>
-      <input id="${bodyId}" type="file" accept="image/*" multiple data-image-question="${q.id}" hidden />
+      <label class="ireq-image-button" for="${bodyId}">📎 画像・PSDファイルを選ぶ（複数可）</label>
+      <input id="${bodyId}" type="file" accept="image/*,.psd" multiple data-image-question="${q.id}" hidden />
       <div class="ireq-image-previews" id="previews-${q.id}"></div>
       <p class="ireq-image-status" id="status-${q.id}"></p>
     </div>`;
@@ -316,7 +316,11 @@ async function handleImageUpload(input) {
       if (error) throw error;
       const url = db.storage.from('request-attachments').getPublicUrl(safeName).data.publicUrl;
       uploadedImages[qid].push(url);
-      previews.insertAdjacentHTML('beforeend', `<span class="ireq-image-thumb"><img src="${url}" alt="" /></span>`);
+      const isPsd = /\.psd$/i.test(file.name);
+      const thumbHtml = isPsd
+        ? `<span class="ireq-image-thumb is-file"><span class="ireq-file-icon">🖼️</span><span class="ireq-file-name">${escapeHtml(file.name)}</span></span>`
+        : `<span class="ireq-image-thumb"><img src="${url}" alt="" /></span>`;
+      previews.insertAdjacentHTML('beforeend', thumbHtml);
     } catch (error) {
       status.textContent = `一部の画像をアップロードできませんでした：${error.message}`;
     }
