@@ -90,7 +90,7 @@
           <h2 class="oc-section-title">⑤ 制作条件・注意事項</h2>
           <div class="oc-info-card oc-terms-card">
             <div class="oc-info-row"><span>納品形式</span><b>Live2Dモデルデータ一式（お渡し方法は別途ご案内します）</b></div>
-            <div class="oc-info-row"><span>修正回数</span><b id="oc-revision"></b></div>
+            <div class="oc-info-row oc-info-row-stack"><span>修正回数</span><b id="oc-revision"></b></div>
             <div class="oc-info-row"><span>納期</span><b id="oc-due"></b></div>
             <div class="oc-info-row"><span>お支払い状況</span><b id="oc-payment"></b></div>
             <div class="oc-info-row"><span>制作開始の条件</span><b>内容のご同意・お支払いの確認をもって制作を開始いたします</b></div>
@@ -102,8 +102,17 @@
           </p>
         </section>
 
+        <section class="oc-section">
+          <h2 class="oc-section-title">⑥ お支払い方法</h2>
+          <div class="oc-payment-choices" id="oc-payment-choices">
+            <label class="oc-payment-card"><input type="radio" name="payment_method" value="bank" /><span class="oc-payment-name">銀行振込</span><span class="oc-payment-desc">同意後、担当者より振込先の口座情報をご案内いたします。</span></label>
+            <label class="oc-payment-card"><input type="radio" name="payment_method" value="paypay" /><span class="oc-payment-name">PayPay</span><span class="oc-payment-desc">同意後、担当者よりお支払い方法をご案内いたします。</span></label>
+          </div>
+        </section>
+
         <section class="oc-section oc-agree-section">
           <h2 class="oc-section-title">上記の内容を確認しました</h2>
+          <p class="oc-contact-note">これで大丈夫ですか？内容に変更やご希望がある場合は、同意する前に公式XまたはDiscordまでメッセージをお願いいたします🙇🏻‍♀️</p>
           <form id="oc-agree-form">
             <label class="oc-agree-check"><input type="checkbox" name="check1" required /><span>制作内容・料金・オプション・納品条件を確認しました。</span></label>
             <label class="oc-agree-check"><input type="checkbox" name="check2" required /><span>注意事項・利用規約を確認しました。</span></label>

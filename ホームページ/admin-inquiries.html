@@ -100,6 +100,7 @@
                   <label class="dash-check-field"><input id="od-replied" type="checkbox" /><span>返信済みにする</span></label>
                 </div>
                 <label class="dash-field wide">依頼内容<textarea id="od-message" rows="3"></textarea></label>
+                <label class="dash-field wide">ヒアリング内容まとめ<textarea id="od-hearing-summary" rows="5" placeholder="「依頼票」タブの回答内容を参考に、お客様に確認してもらいたい内容をまとめて入力してください"></textarea><small class="od-hint">ここに書いた内容が、お客様の「制作内容のご確認ページ」にそのまま表示されます。</small></label>
               </div>
 
               <div class="dash-card dash-progress-card">
@@ -112,6 +113,7 @@
                       <select id="od-payment" class="filter-select"></select>
                       <input id="od-paid-amount" type="number" min="0" placeholder="支払額" />
                       <input id="od-paid-date" type="date" />
+                      <span id="od-payment-method" class="payment-method-badge" hidden></span>
                     </div>
                   </div>
                   <div class="dash-highlight dash-highlight-due">
@@ -140,6 +142,7 @@
                     <button type="button" id="od-rev-add" class="od-mini-button">＋1回 修正</button>
                   </div>
                 </div>
+                <label class="dash-field wide"><span class="dash-field-label">無料回数を超えた場合の追加料金（1回あたり・円）</span><input id="od-rev-extra-fee" type="number" min="0" placeholder="例：500" /><small class="od-hint">お客様への確認ページに「◯回を超えると1回につき＋◯円」として表示されます。</small></label>
                 <p id="od-rev-warn" class="od-warn" hidden>⚠ 無料修正回数を超えています（追加料金の発生をご確認ください）</p>
 
                 <div class="dash-divider"></div>

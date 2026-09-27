@@ -819,7 +819,8 @@ const COLUMN_SQL_FILE = {
   paid_date: 'order-management.sql', progress_steps: 'order-management.sql', spec: 'order-management.sql', files: 'order-management.sql', awaiting_since: 'order-management.sql',
   related_inquiry_id: 'process-management.sql', related_task_id: 'process-management.sql', consult_status: 'process-management.sql', extra_fee: 'process-management.sql', extra_count: 'process-management.sql',
   illustration_needed: 'request-scope.sql', chardesign_needed: 'request-scope.sql', expressions_needed: 'expression-catalog.sql', parts_illustration_ready: 'parts-illustration-ready.sql',
-  confirmation_agreed_at: 'order-confirmation.sql', confirmation_snapshot: 'order-confirmation.sql'
+  confirmation_agreed_at: 'order-confirmation.sql', confirmation_snapshot: 'order-confirmation.sql',
+  revision_extra_fee: 'revision-hearing-summary.sql', hearing_summary: 'revision-hearing-summary.sql', payment_method: 'revision-hearing-summary.sql'
 };
 
 function missingColumnName(text) {
@@ -1049,6 +1050,7 @@ function openDetail(id) {
   $('#od-created').textContent = item.created_date ? new Date(item.created_date).toLocaleDateString('ja-JP') : '—';
   $('#od-due').value = item.due_date ? String(item.due_date).slice(0, 10) : '';
   $('#od-message').value = item.message || '';
+  $('#od-hearing-summary').value = item.hearing_summary || '';
   $('#od-replied').checked = Boolean(item.replied);
   $('#od-contact').textContent = contactSummary(item);
   $('#od-contact-actions').innerHTML = contactRow(item);
@@ -1067,10 +1069,19 @@ function openDetail(id) {
   const baseAmount = Number(item.base_amount || 0) > 0 ? Number(item.base_amount) : Math.max(Number(item.total || 0) - extras.reduce((sum, extra) => sum + Number(extra.fee || 0), 0), 0);
   $('#od-base').value = baseAmount;
   $('#od-payment').value = paymentOf(item);
+  const paymentMethodBadge = $('#od-payment-method');
+  const paymentMethodLabels = { bank: '💳 銀行振込希望', paypay: '📱 PayPay希望' };
+  if (item.payment_method && paymentMethodLabels[item.payment_method]) {
+    paymentMethodBadge.textContent = paymentMethodLabels[item.payment_method];
+    paymentMethodBadge.hidden = false;
+  } else {
+    paymentMethodBadge.hidden = true;
+  }
   $('#od-paid-amount').value = Number(item.paid_amount || 0);
   $('#od-paid-date').value = item.paid_date ? String(item.paid_date).slice(0, 10) : '';
   $('#od-rev-limit').value = Number(item.revision_limit ?? 2);
   $('#od-rev-used').value = Number(item.revision_used || 0);
+  $('#od-rev-extra-fee').value = Number(item.revision_extra_fee || 0);
   $('#od-memo').value = item.memo || '';
   refreshProgressBox(item);
   refreshExpressionBox(item);
@@ -1092,6 +1103,7 @@ async function saveDetail() {
     order_status: status,
     due_date: $('#od-due').value || null,
     message: $('#od-message').value,
+    hearing_summary: $('#od-hearing-summary').value,
     replied: $('#od-replied').checked,
     plan: $('#od-plan').value,
     motion: $('#od-motion').value,
@@ -1106,6 +1118,7 @@ async function saveDetail() {
     paid_date: $('#od-paid-date').value || null,
     revision_limit: Number($('#od-rev-limit').value || 0),
     revision_used: Number($('#od-rev-used').value || 0),
+    revision_extra_fee: Number($('#od-rev-extra-fee').value || 0),
     expressions_needed: [...document.querySelectorAll('#od-expr-box [data-expr]:checked')].map((box) => box.dataset.expr),
     progress_steps: [...document.querySelectorAll('#od-progress-box [data-step]:checked')].map((box) => box.dataset.step),
     memo: $('#od-memo').value,

@@ -16,6 +16,24 @@
 .oc-info-row b{color:var(--ireq-ink);font-weight:700;text-align:right}
 
 .oc-message-text{margin:0;padding:18px 22px;font-size:13px;line-height:1.9;color:var(--ireq-ink)}
+.oc-message-block{padding:16px 22px;border-bottom:1px dashed var(--ireq-border)}
+.oc-message-block:last-child{border-bottom:0}
+.oc-message-block .oc-message-text{padding:0}
+.oc-message-heading{margin:0 0 8px;font:700 10px var(--fun);letter-spacing:.06em;color:var(--ireq-rose-deep)}
+
+.oc-info-row-stack{flex-direction:column;align-items:flex-start;gap:6px}
+.oc-info-row-stack b{text-align:left;font-weight:400;line-height:1.8;color:var(--ireq-ink)}
+
+/* ⑥ お支払い方法 */
+.oc-payment-choices{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.oc-payment-card{display:flex;flex-direction:column;gap:6px;padding:20px 18px;border-radius:16px;border:1px solid var(--ireq-border);background:var(--ireq-card);cursor:pointer}
+.oc-payment-card:has(input:checked){border-color:var(--ireq-rose-deep);background:#fdf3f5;box-shadow:0 0 0 2px var(--ireq-rose-deep) inset}
+.oc-payment-card input{width:18px;height:18px;accent-color:var(--ireq-rose-deep)}
+.oc-payment-name{font-size:14px;font-weight:800;color:var(--ireq-ink)}
+.oc-payment-desc{font-size:11px;line-height:1.7;color:var(--ireq-muted)}
+
+/* 同意前のご連絡お願い */
+.oc-contact-note{margin:0 0 20px;padding:14px 18px;border-radius:12px;background:#fff4fa;color:#a05c82;font-size:12px;line-height:1.8;font-weight:700;text-align:center}
 
 /* ④ 合計金額 */
 .oc-total-card{background:linear-gradient(135deg,#fff5f8,#fdf0f6);border:1px solid var(--ireq-border);border-radius:20px;padding:30px 26px;text-align:center}
@@ -44,6 +62,7 @@
 .oc-agreed-badge{display:inline-flex;align-items:center;gap:8px;margin:0 auto 18px;padding:10px 24px;border-radius:99px;background:#e3f5ea;color:#2f8f6b;font:800 14px var(--round)}
 
 @media(max-width:640px){
+  .oc-payment-choices{grid-template-columns:1fr}
   .oc-info-row{flex-direction:column;gap:4px}
   .oc-info-row b{text-align:left}
   .oc-total-amount{font-size:34px}

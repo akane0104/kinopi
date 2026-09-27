@@ -680,3 +680,6 @@
 
 /* ===== 追加機能：制作内容ご確認ページの同意タグ ===== */
 .scope-agreed{background:var(--mint);color:#2f8f6b}
+
+/* ===== 追加機能：お客様が選んだお支払い方法の表示 ===== */
+.payment-method-badge{display:inline-block;padding:6px 12px;border-radius:99px;background:var(--lav);color:var(--purple);font:700 10px var(--round);white-space:nowrap}

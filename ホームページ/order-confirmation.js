@@ -92,8 +92,15 @@ function renderMain(data) {
 
   // ② ご依頼内容
   const messageSection = $('#oc-message-section');
+  const messageBlocks = [];
+  if (data.hearing_summary && data.hearing_summary.trim()) {
+    messageBlocks.push(`<div class="oc-message-block"><p class="oc-message-heading">ヒアリング内容</p><p class="oc-message-text">${escapeHtml(data.hearing_summary).replace(/\n/g, '<br>')}</p></div>`);
+  }
   if (data.message && data.message.trim()) {
-    $('#oc-message-card').innerHTML = `<p class="oc-message-text">${escapeHtml(data.message).replace(/\n/g, '<br>')}</p>`;
+    messageBlocks.push(`<div class="oc-message-block"><p class="oc-message-heading">ご依頼時のメッセージ</p><p class="oc-message-text">${escapeHtml(data.message).replace(/\n/g, '<br>')}</p></div>`);
+  }
+  if (messageBlocks.length) {
+    $('#oc-message-card').innerHTML = messageBlocks.join('');
     messageSection.hidden = false;
   } else {
     messageSection.hidden = true;
@@ -121,20 +128,28 @@ function renderMain(data) {
   $('#oc-total-breakdown').innerHTML = breakdownRows.join('');
 
   // ⑤ 制作条件
-  $('#oc-revision').textContent = `${Number(data.revision_used || 0)} / ${Number(data.revision_limit ?? 2)}回`;
+  const revLimit = Number(data.revision_limit ?? 2);
+  const revUsed = Number(data.revision_used || 0);
+  const revExtraFee = Number(data.revision_extra_fee || 0);
+  const revisionText = revExtraFee > 0
+    ? `${revLimit}回まで無料（現在${revUsed}回使用）。${revLimit}回を超えると、1回につき+${yen(revExtraFee)}の追加料金がかかります（内容により変動する場合があります）。`
+    : `${revLimit}回まで無料（現在${revUsed}回使用）。${revLimit}回を超える修正は、内容により追加料金をご案内いたします。`;
+  $('#oc-revision').textContent = revisionText;
   $('#oc-due').textContent = fmtDate(data.due_date);
   $('#oc-payment').textContent = PAYMENT_LABELS[data.payment_status] || '未払い';
 
   // 同意フォームをリセット
   const form = $('#oc-agree-form');
   form.reset();
+  document.querySelectorAll('input[name="payment_method"]').forEach((input) => { input.checked = false; });
   updateAgreeButtonState();
 }
 
 function updateAgreeButtonState() {
   const form = $('#oc-agree-form');
   const allChecked = ['check1', 'check2', 'check3'].every((name) => form.elements[name].checked);
-  $('#oc-agree-button').disabled = !allChecked;
+  const paymentSelected = Boolean(document.querySelector('input[name="payment_method"]:checked'));
+  $('#oc-agree-button').disabled = !(allChecked && paymentSelected);
 }
 
 async function notifyDiscordAgreement(serial, name) {
@@ -161,7 +176,7 @@ async function handleAgreeSubmit(event) {
   button.disabled = true;
   message.style.color = '#c14978';
   message.textContent = '送信中…';
-  const { data, error } = await db.rpc('agree_to_confirmation', { p_serial: currentSerial });
+  const { data, error } = await db.rpc('agree_to_confirmation', { p_serial: currentSerial, p_payment_method: document.querySelector('input[name="payment_method"]:checked')?.value || null });
   if (error) {
     message.textContent = `送信できませんでした：${error.message}`;
     agreeSubmitting = false;
@@ -193,6 +208,7 @@ function init() {
   $('#oc-code-form').addEventListener('submit', handleCodeSubmit);
   $('#oc-agree-form').addEventListener('submit', handleAgreeSubmit);
   $('#oc-agree-form').addEventListener('change', updateAgreeButtonState);
+  $('#oc-payment-choices').addEventListener('change', updateAgreeButtonState);
 }
 
 init();
