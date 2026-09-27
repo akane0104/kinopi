@@ -1,0 +1,51 @@
+/* ============================================
+   制作内容のご確認ページ — 専用スタイル
+   illustration-request.css のデザイントークンをそのまま利用しています。
+   ============================================ */
+
+.oc-main{max-width:680px}
+.oc-head{margin-bottom:36px}
+
+.oc-section{margin-bottom:40px}
+.oc-section-title{margin:0 0 14px;font-size:16px;font-weight:800;color:var(--ireq-ink);letter-spacing:-.01em}
+
+.oc-info-card{background:var(--ireq-card);border:1px solid var(--ireq-border);border-radius:16px;padding:6px 22px}
+.oc-info-row{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:14px 0;border-bottom:1px dashed var(--ireq-border);font-size:13px}
+.oc-info-row:last-child{border-bottom:0}
+.oc-info-row span{color:var(--ireq-muted);flex:0 0 auto}
+.oc-info-row b{color:var(--ireq-ink);font-weight:700;text-align:right}
+
+.oc-message-text{margin:0;padding:18px 22px;font-size:13px;line-height:1.9;color:var(--ireq-ink)}
+
+/* ④ 合計金額 */
+.oc-total-card{background:linear-gradient(135deg,#fff5f8,#fdf0f6);border:1px solid var(--ireq-border);border-radius:20px;padding:30px 26px;text-align:center}
+.oc-total-label{margin:0 0 6px;font:700 11px var(--fun);letter-spacing:.1em;color:var(--ireq-rose-deep)}
+.oc-total-amount{margin:0 0 22px;font:800 44px var(--fun);color:var(--ireq-ink);letter-spacing:-.02em}
+.oc-total-breakdown{text-align:left;border-top:1px solid var(--ireq-border);padding-top:16px}
+.oc-breakdown-row{display:flex;justify-content:space-between;padding:7px 0;font-size:12px;color:var(--ireq-muted)}
+.oc-breakdown-row b{color:var(--ireq-ink);font-weight:700}
+.oc-breakdown-row.oc-breakdown-total{margin-top:6px;padding-top:12px;border-top:1px dashed var(--ireq-border);font-size:14px}
+.oc-breakdown-row.oc-breakdown-total span,.oc-breakdown-row.oc-breakdown-total b{color:var(--ireq-rose-deep);font-weight:800}
+
+/* ⑤ 制作条件 */
+.oc-legal-links{margin:14px 0 0;text-align:center}
+.oc-legal-links a{font-size:12px;font-weight:700;color:var(--ireq-rose-deep);border-bottom:1px dashed var(--ireq-rose)}
+
+/* 同意エリア */
+.oc-agree-section{padding:26px 24px;border-radius:20px;background:#fff8fb;border:2px dashed var(--ireq-rose)}
+.oc-agree-section .oc-section-title{text-align:center}
+.oc-agree-check{display:flex;align-items:flex-start;gap:12px;padding:14px 4px;border-bottom:1px solid var(--ireq-border);font-size:13px;line-height:1.7;color:var(--ireq-ink);cursor:pointer}
+.oc-agree-check:last-of-type{border-bottom:0;margin-bottom:20px}
+.oc-agree-check input{width:20px;height:20px;flex:0 0 auto;margin-top:2px;accent-color:var(--ireq-rose-deep)}
+.oc-agree-button{width:100%}
+.oc-agree-button:disabled{opacity:.4;cursor:not-allowed}
+
+/* 確認済み・お見積り確認中の表示 */
+.oc-agreed-badge{display:inline-flex;align-items:center;gap:8px;margin:0 auto 18px;padding:10px 24px;border-radius:99px;background:#e3f5ea;color:#2f8f6b;font:800 14px var(--round)}
+
+@media(max-width:640px){
+  .oc-info-row{flex-direction:column;gap:4px}
+  .oc-info-row b{text-align:left}
+  .oc-total-amount{font-size:34px}
+  .oc-agree-section{padding:20px 16px}
+}

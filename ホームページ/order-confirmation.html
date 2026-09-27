@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="ぴのきー。｜制作内容のご確認" />
+    <title>ぴのきー。 | 制作内容のご確認</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A9%B7%3C/text%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="illustration-request.css" />
+    <link rel="stylesheet" href="order-confirmation.css" />
+  </head>
+  <body class="ireq-body">
+    <header class="ireq-header">
+      <a href="index.html" class="ireq-brand" aria-label="ぴのきー。トップへ"><span class="brand-dot">●</span><span>ぴのきー。</span></a>
+      <nav aria-label="メインメニュー"><a href="status.html">進捗を確認</a></nav>
+    </header>
+
+    <main class="ireq-main oc-main">
+
+      <section id="oc-code-step" class="ireq-step ireq-intro-wrap">
+        <p class="ireq-eyebrow">ORDER CONFIRMATION</p>
+        <h1>制作内容のご確認</h1>
+        <p class="ireq-lead">ヒアリング内容をもとに、制作内容と料金をご確認ください。<br />内容をご確認いただき、問題がなければ同意をお願いいたします。</p>
+        <form id="oc-code-form" class="ireq-code-form">
+          <label class="ireq-field">
+            <span class="ireq-q-label">お客様コード</span>
+            <input id="oc-serial" required placeholder="PNK-260916-LT8H" autocomplete="off" />
+          </label>
+          <button class="ireq-submit-button" type="submit">確認する <span>→</span></button>
+          <p id="oc-code-message" class="ireq-message"></p>
+          <p class="ireq-code-hint">コードが分からない場合は、「きのぴー。」公式Xまたは Discord までお問い合わせください💬</p>
+        </form>
+      </section>
+
+      <section id="oc-pending-step" class="ireq-step ireq-intro-wrap" hidden>
+        <p class="ireq-eyebrow">ORDER CONFIRMATION</p>
+        <h1>お見積り確認中です</h1>
+        <p class="ireq-lead">現在、担当者が制作内容とお見積り金額を確認しております。金額が確定しましたら、あらためてご連絡いたします。今しばらくお待ちくださいませ🙇🏻‍♀️</p>
+        <p class="ireq-serial-note">お客様コード：<b id="oc-pending-serial"></b></p>
+      </section>
+
+      <section id="oc-agreed-step" class="ireq-step ireq-intro-wrap" hidden>
+        <p class="ireq-eyebrow">ORDER CONFIRMATION</p>
+        <h1>確認済みです</h1>
+        <div class="oc-agreed-badge">✓ 確認済み</div>
+        <p class="ireq-lead" id="oc-agreed-text"></p>
+        <p class="ireq-serial-note">お客様コード：<b id="oc-agreed-serial"></b></p>
+      </section>
+
+      <section id="oc-main-step" class="ireq-step" hidden>
+        <div class="ireq-intro-wrap oc-head">
+          <p class="ireq-eyebrow">ORDER CONFIRMATION</p>
+          <h1>制作内容のご確認</h1>
+          <p class="ireq-serial-note">お客様コード：<b id="oc-serial-display"></b></p>
+        </div>
+
+        <section class="oc-section">
+          <h2 class="oc-section-title">① ご依頼者情報</h2>
+          <div class="oc-info-card">
+            <div class="oc-info-row"><span>お名前</span><b id="oc-name"></b></div>
+            <div class="oc-info-row"><span>依頼番号</span><b id="oc-serial-2"></b></div>
+            <div class="oc-info-row"><span>現在のステータス</span><b id="oc-status"></b></div>
+          </div>
+        </section>
+
+        <section class="oc-section" id="oc-message-section">
+          <h2 class="oc-section-title">② ご依頼内容</h2>
+          <div class="oc-info-card" id="oc-message-card"></div>
+        </section>
+
+        <section class="oc-section">
+          <h2 class="oc-section-title">③ 制作内容の詳細</h2>
+          <div class="oc-info-card" id="oc-detail-card"></div>
+        </section>
+
+        <section class="oc-section">
+          <h2 class="oc-section-title">④ 合計金額</h2>
+          <div class="oc-total-card">
+            <p class="oc-total-label">制作料金合計</p>
+            <p class="oc-total-amount" id="oc-total-amount">¥0</p>
+            <div class="oc-total-breakdown" id="oc-total-breakdown"></div>
+          </div>
+        </section>
+
+        <section class="oc-section">
+          <h2 class="oc-section-title">⑤ 制作条件・注意事項</h2>
+          <div class="oc-info-card oc-terms-card">
+            <div class="oc-info-row"><span>納品形式</span><b>Live2Dモデルデータ一式（お渡し方法は別途ご案内します）</b></div>
+            <div class="oc-info-row"><span>修正回数</span><b id="oc-revision"></b></div>
+            <div class="oc-info-row"><span>納期</span><b id="oc-due"></b></div>
+            <div class="oc-info-row"><span>お支払い状況</span><b id="oc-payment"></b></div>
+            <div class="oc-info-row"><span>制作開始の条件</span><b>内容のご同意・お支払いの確認をもって制作を開始いたします</b></div>
+            <div class="oc-info-row"><span>追加料金について</span><b>ご同意後に内容の追加・変更があった場合、別途追加料金が発生することがあります</b></div>
+            <div class="oc-info-row"><span>著作権・利用範囲</span><b>詳細は下記の利用規約・特定商取引法に基づく表記をご確認ください</b></div>
+          </div>
+          <p class="oc-legal-links">
+            <a href="tokushoho.html" target="_blank" rel="noopener">特定商取引法に基づく表記を確認する →</a>
+          </p>
+        </section>
+
+        <section class="oc-section oc-agree-section">
+          <h2 class="oc-section-title">上記の内容を確認しました</h2>
+          <form id="oc-agree-form">
+            <label class="oc-agree-check"><input type="checkbox" name="check1" required /><span>制作内容・料金・オプション・納品条件を確認しました。</span></label>
+            <label class="oc-agree-check"><input type="checkbox" name="check2" required /><span>注意事項・利用規約を確認しました。</span></label>
+            <label class="oc-agree-check"><input type="checkbox" name="check3" required /><span>上記内容に同意して制作を進めることを希望します。</span></label>
+            <button class="ireq-submit-button oc-agree-button" type="submit" id="oc-agree-button" disabled>内容に同意して制作を進める <span>→</span></button>
+            <p id="oc-agree-message" class="ireq-message"></p>
+          </form>
+        </section>
+      </section>
+
+      <section id="oc-done-step" class="ireq-step ireq-intro-wrap" hidden>
+        <p class="ireq-eyebrow">ORDER CONFIRMATION</p>
+        <h1>制作内容の確認が完了しました</h1>
+        <p class="ireq-lead">ご確認ありがとうございます。<br />これで制作内容の確認が完了しました。今後の制作については、担当者からご案内いたします。</p>
+      </section>
+
+    </main>
+
+    <footer class="ireq-footer"><a href="index.html">ぴのきー。</a><p>© 2026 PINOKII.</p></footer>
+
+    <script src="config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="order-confirmation.js"></script>
+  </body>
+</html>

@@ -68,6 +68,7 @@ function stepsForItem(item) {
 const DEFAULT_MESSAGE_TEMPLATES = [
   { label: '最初のご挨拶（依頼フォームのご案内）', body: '{{name}} 様\n\nこの度は「きのぴー。」へご依頼・ご相談いただき、\nありがとうございます！\n\nイラスト制作・Live2D制作について、\nこれから内容を確認しながらご案内させていただきます。\n\nまずは、下記のお客様コードをコピーして、\n依頼フォームへお進みください。\n\n━━━━━━━━━━━━━━━━━━\n🎫 お客様コード\n{{serial}}\n━━━━━━━━━━━━━━━━━━\n\n【ご依頼の流れ】\n\n① お客様コードをコピー\n↓\n② 下記URLから「依頼フォーム」を開く\nhttps://example.com/illustration-request.html\n↓\n③ お客様コードを貼り付ける\n↓\n④ ご希望の制作内容を入力\n↓\n⑤ 内容を確認して送信\n\nお客様コードは、今回のご依頼を管理するために使用します。\nフォームへ入力する際は、上記のコードをそのままコピーしてご利用ください。\n\nご不明な点や「まだ内容が決まっていない」という場合も、\nお気軽にご相談ください！\n\nそれでは、フォームよりご依頼内容をお聞かせください。\nよろしくお願いいたします。' },
   { label: 'お見積りのご案内', body: '{{name}} 様\n\nお問い合わせいただきありがとうございます。ぴのきー。です。\nご相談いただいた内容から、お見積りは {{total}} となります。\n\nシリアルナンバー：{{serial}}\n\n内容にご納得いただけましたら、このままご準備を進めさせていただきます。\nご不明な点があれば、いつでもお気軽にご連絡ください。' },
+  { label: '制作内容のご確認をお願い', body: '{{name}} 様\n\nお見積り金額が確定いたしましたので、制作内容とお見積りのご確認をお願いいたします🙇🏻‍♀️\n\n下記のページから、お客様コードをご入力のうえご確認ください。\n\nhttps://example.com/order-confirmation.html\n\nお客様コード：{{serial}}\n\nご確認いただき、内容に同意いただけましたら、そのまま制作を進めさせていただきます。' },
   { label: '納期のご連絡', body: '{{name}} 様\n\nいつもありがとうございます。ぴのきー。です。\n現在の納品予定日は {{due}} を予定しております。\n進捗は下記のページからもご確認いただけます。\nhttps://example.com/status.html?serial={{serial}}\n\n何かご希望がございましたら、お気軽にお知らせください。' },
   { label: '確認のお願い（awaiting）', body: '{{name}} 様\n\nお待たせいたしました！ぴのきー。です。\n制作が進みましたので、ご確認をお願いいたします。\n\nシリアルナンバー：{{serial}}\n\nご確認後、気になる点や修正のご希望があればお知らせください。' },
   { label: '修正回数を超えた場合のご案内', body: '{{name}} 様\n\nご連絡ありがとうございます。ぴのきー。です。\nご契約内容の無料修正回数（{{revLimit}}回）を超えるご希望となるため、追加修正として承ることができます。\n\n追加修正の内容と料金は、あらためてご案内いたします。' },
@@ -120,6 +121,7 @@ function fillTemplate(body, item) {
 const URL_COPY_PAGES = [
   { label: 'ホームページ', path: '' },
   { label: '依頼フォーム（イラスト・パーツ分け）', path: 'illustration-request.html' },
+  { label: '制作内容のご確認ページ', path: 'order-confirmation.html' },
   { label: '進捗確認ページ', path: 'status.html' },
   { label: '特定商取引法に基づく表記', path: 'tokushoho.html' }
 ];
@@ -530,6 +532,7 @@ function stalled(item) {
 
 function scopeTags(item) {
   const tags = [];
+  if (item.confirmation_agreed_at) tags.push({ label: `✓ 同意済み（${fmtDate(item.confirmation_agreed_at)}）`, cls: 'scope-agreed' });
   if (item.plan) tags.push({ label: item.plan, cls: 'scope-plan' });
   if (item.motion) tags.push({ label: item.motion, cls: 'scope-motion' });
   tags.push(scopeYesNoTag(scopeLabels.illustration, item.illustration_needed));
@@ -815,7 +818,8 @@ const COLUMN_SQL_FILE = {
   revision_limit: 'order-management.sql', revision_used: 'order-management.sql', payment_status: 'order-management.sql', paid_amount: 'order-management.sql',
   paid_date: 'order-management.sql', progress_steps: 'order-management.sql', spec: 'order-management.sql', files: 'order-management.sql', awaiting_since: 'order-management.sql',
   related_inquiry_id: 'process-management.sql', related_task_id: 'process-management.sql', consult_status: 'process-management.sql', extra_fee: 'process-management.sql', extra_count: 'process-management.sql',
-  illustration_needed: 'request-scope.sql', chardesign_needed: 'request-scope.sql', expressions_needed: 'expression-catalog.sql', parts_illustration_ready: 'parts-illustration-ready.sql'
+  illustration_needed: 'request-scope.sql', chardesign_needed: 'request-scope.sql', expressions_needed: 'expression-catalog.sql', parts_illustration_ready: 'parts-illustration-ready.sql',
+  confirmation_agreed_at: 'order-confirmation.sql', confirmation_snapshot: 'order-confirmation.sql'
 };
 
 function missingColumnName(text) {
