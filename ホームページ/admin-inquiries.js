@@ -222,8 +222,8 @@ function renderTemplatesPanel(item) {
   const total = messageTemplates.length;
   box.innerHTML = messageTemplates.map((tpl, index) => `<div class="tmpl-item">
     <div class="tmpl-move-buttons">
-      <button type="button" class="tmpl-move-button" data-tmpl-move="${index}:-1" ${index === 0 ? 'disabled' : ''} title="上へ">↑</button>
-      <button type="button" class="tmpl-move-button" data-tmpl-move="${index}:1" ${index === total - 1 ? 'disabled' : ''} title="下へ">↓</button>
+      <button type="button" class="tmpl-move-button" data-tmpl-move="${index}:-1" ${index === 0 ? 'disabled' : ''} title="上へ">▲</button>
+      <button type="button" class="tmpl-move-button" data-tmpl-move="${index}:1" ${index === total - 1 ? 'disabled' : ''} title="下へ">▼</button>
     </div>
     <b>${escapeHtml(tpl.label)}</b>
     <div class="tmpl-item-actions"><button type="button" class="od-mini-button" data-tmpl-copy="${index}">コピーする</button><button type="button" class="od-mini-button is-ghost" data-tmpl-edit="${index}">編集</button></div>
@@ -603,10 +603,30 @@ function passesFilters(item) {
 
 let openCardIds = new Set();
 
+let currentSort = 'new';
+
+function sortInquiries(list) {
+  const sorted = list.slice();
+  if (currentSort === 'old') return sorted.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+  if (currentSort === 'due') return sorted.sort((a, b) => {
+    if (!a.due_date && !b.due_date) return 0;
+    if (!a.due_date) return 1;
+    if (!b.due_date) return -1;
+    return new Date(a.due_date) - new Date(b.due_date);
+  });
+  if (currentSort === 'unpaid') return sorted.sort((a, b) => {
+    const aUnpaid = a.payment_status !== 'paid' ? 0 : 1;
+    const bUnpaid = b.payment_status !== 'paid' ? 0 : 1;
+    if (aUnpaid !== bUnpaid) return aUnpaid - bUnpaid;
+    return new Date(b.created_date) - new Date(a.created_date);
+  });
+  return sorted.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+}
+
 function renderList() {
   const list = $('#inquiries-admin-list');
   const term = currentSearch.trim().toLowerCase();
-  const filtered = inquiries.filter((item) => passesFilters(item) && matchesSearch(item, term));
+  const filtered = sortInquiries(inquiries.filter((item) => passesFilters(item) && matchesSearch(item, term)));
   if (!filtered.length) { list.innerHTML = '<p class="empty-text">条件に合う依頼がありません。</p>'; return; }
   list.innerHTML = filtered.map((item) => {
     const status = orderStatusOf(item);
@@ -640,12 +660,12 @@ function renderList() {
         </div>
         <div class="card-progress-line"><div class="card-progress-bar"><i style="width:${prog.percent}%"></i></div><span>${prog.done} / ${prog.total} 完了（${prog.percent}%）</span></div>
         ${alerts.length ? `<div class="card-alerts">${alerts.join('')}</div>` : ''}`;
-    return `<details class="inquiry-card" data-id="${item.id}">
+    return `<details class="inquiry-card ${st.cls}" data-id="${item.id}">
       <summary class="inquiry-card-summary">
         <div class="inquiry-card-top">
           <div class="inquiry-card-id">
             <span class="serial-tag">${escapeHtml(item.serial)}</span>
-            <button type="button" class="serial-copy-button" data-copy-text="${escapeHtml(item.serial)}" title="コードをコピー">📋</button>
+            <button type="button" class="serial-copy-button" data-copy-text="${escapeHtml(item.serial)}" title="コードをコピー">コピー</button>
             <span class="order-status-badge ${st.cls}">${st.label}</span>
             ${statusOf(item) === 'pending' ? '<span class="status-badge pending">未返信</span>' : '<span class="status-badge done">返信済み ♡</span>'}
           </div>
@@ -744,6 +764,7 @@ function renderSales() {
     { label: '今月の売上', value: yen(paidThisMonth), cls: 'tile-money' },
     { label: '売上予定額', value: yen(planned), cls: 'tile-plan' },
     { label: '今月の依頼数', value: `${countBy((item) => item.created_date && monthKey(new Date(item.created_date)) === thisMonth)}件`, cls: '' },
+    { label: '未返信', value: `${countBy((item) => !item.replied)}件`, cls: 'tile-wait' },
     { label: '制作中', value: `${countBy((item) => ['prep', 'working', 'revising'].includes(orderStatusOf(item)))}件`, cls: 'tile-working' },
     { label: '確認待ち', value: `${countBy((item) => orderStatusOf(item) === 'awaiting')}件`, cls: 'tile-wait' },
     { label: '完了', value: `${countBy((item) => orderStatusOf(item) === 'completed')}件`, cls: 'tile-done' },
@@ -1316,6 +1337,8 @@ document.addEventListener('change', (event) => {
   if (paymentSelect) { paymentFilter = paymentSelect.value; renderList(); return; }
   const dueSelect = event.target.closest('#due-filter');
   if (dueSelect) { dueFilter = dueSelect.value; renderList(); return; }
+  const sortSelect = event.target.closest('#sort-filter');
+  if (sortSelect) { currentSort = sortSelect.value; renderList(); return; }
 });
 
 buildSelectOptions();

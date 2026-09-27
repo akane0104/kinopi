@@ -49,6 +49,12 @@
             </select>
           </div>
           <input id="inquiry-search" type="search" placeholder="シリアル・依頼名・連絡先・内容で検索" />
+          <select id="sort-filter" class="filter-select">
+            <option value="new">新しい順</option>
+            <option value="old">古い順</option>
+            <option value="due">納期が近い順</option>
+            <option value="unpaid">未払いを上に</option>
+          </select>
         </div>
         <div id="inquiries-admin-list" class="inquiry-list"></div>
         <dialog id="delete-confirm"><div class="confirm-box">
@@ -62,7 +68,7 @@
 
         <dialog id="order-detail"><div class="od-box">
           <div class="od-head">
-            <div class="od-head-left"><span class="serial-tag" id="od-serial"></span><button type="button" class="serial-copy-button" id="od-serial-copy" title="コードをコピー">📋</button><b id="od-name"></b><div id="od-scope-tags" class="scope-tag-row"></div></div>
+            <div class="od-head-left"><span class="serial-tag" id="od-serial"></span><button type="button" class="serial-copy-button" id="od-serial-copy" title="コードをコピー">コピー</button><b id="od-name"></b><div id="od-scope-tags" class="scope-tag-row"></div></div>
             <div class="od-head-right"><span id="od-replied-badge" class="reply-badge"></span><select id="od-status" class="od-status-select"></select><button class="od-close" aria-label="閉じる">×</button></div>
           </div>
           <nav class="od-tabs">

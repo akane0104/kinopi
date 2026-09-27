@@ -653,3 +653,24 @@
 .od-mini-button.is-danger{background:#ffe1e1;color:#c1493f}
 .fb-intro-outro label{font-size:9px;font-weight:700;color:#a58798}
 .fb-intro-outro input{width:100%;margin-top:5px;border:1px solid #ead3dd;border-radius:10px;padding:10px 12px;font:13px var(--round);color:var(--ink)}
+
+/* ===== 追加機能：テンプレ文の並び替え・URLコピーの編集ボタン ===== */
+.tmpl-item b{flex:1;min-width:120px}
+.tmpl-move-buttons{display:flex;flex-direction:column;background:#fff;border-radius:10px;overflow:hidden;box-shadow:inset 0 0 0 1.5px #f2d5e0}
+.tmpl-move-button{border:0;cursor:pointer;background:transparent;color:var(--hot);width:28px;height:22px;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.tmpl-move-button:first-child{border-bottom:1.5px solid #f2d5e0}
+.tmpl-move-button:hover:not(:disabled){background:var(--soft-pink)}
+.tmpl-move-button:disabled{opacity:.25;cursor:default}
+.url-copy-actions{display:flex;gap:6px}
+
+/* ===== 追加機能：ステータスごとのカード色分け（左端のライン） ===== */
+.inquiry-card{border-left:5px solid #e5dde2;transition:border-color .2s}
+.inquiry-card.st-received{border-left-color:#b6adbd}
+.inquiry-card.st-prep{border-left-color:var(--purple)}
+.inquiry-card.st-working{border-left-color:var(--hot)}
+.inquiry-card.st-awaiting{border-left-color:#c99d2e}
+.inquiry-card.st-revising{border-left-color:#d8622f}
+.inquiry-card.st-final{border-left-color:#5b7fbf}
+.inquiry-card.st-delivered{border-left-color:#2f8f6b}
+.inquiry-card.st-completed{border-left-color:#3e9e63}
+.inquiry-card.st-cancelled{border-left-color:#b8b0bd}
