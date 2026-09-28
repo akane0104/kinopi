@@ -89,7 +89,31 @@ function setHero() {
   document.getElementById('discount-rate').textContent = s.coupon_percent || 30;
   document.getElementById('hero-title').textContent = s.hero_title;
   document.getElementById('hero-subtitle').textContent = s.hero_subtitle;
-  document.getElementById('contact-email').href = `mailto:${s.contact_email}`;
+  // お問い合わせ先：実際に案内している方法（相談フォーム・X・Discord）を表示。仮のメールアドレスは表示しない
+  const xUrl = (s.contact_x_url || 'https://x.com/Qinopy0104').trim();
+  const discordId = (s.contact_discord_id || 'kinopi_0104').trim();
+  const xLink = document.getElementById('contact-x-link');
+  if (xLink) xLink.href = xUrl;
+  const footerX = document.getElementById('footer-x-link');
+  if (footerX) footerX.href = xUrl;
+  const discordEl = document.getElementById('contact-discord');
+  if (discordEl) discordEl.textContent = `Discord：${discordId}`;
+  const mailEl = document.getElementById('contact-email');
+  const mail = String(s.contact_email || '').trim();
+  if (mailEl) {
+    const isPlaceholder = !mail || /@example\.(com|org|net)$/i.test(mail);
+    mailEl.hidden = isPlaceholder;
+    if (!isPlaceholder) mailEl.href = `mailto:${mail}`;
+  }
+  const campaignName = document.getElementById('campaign-name');
+  if (campaignName) campaignName.textContent = s.coupon_label || '';
+  // ファーストビューの料金の目安：登録されているプランの最安値から自動で計算（固定の数字は使わない）
+  const heroPrice = document.getElementById('hero-price');
+  const planPrices = appData.plans.map((plan) => Number(plan.price)).filter((price) => Number.isFinite(price) && price > 0);
+  if (heroPrice) {
+    if (planPrices.length) document.getElementById('hero-price-from').textContent = `${Math.min(...planPrices).toLocaleString('ja-JP')}円`;
+    else heroPrice.hidden = true;
+  }
   const illustLabel = s.illustration_label || 'イラスト制作';
   const chardesLabel = s.chardesign_label || 'キャラクターデザイン';
   ['illustration-legend-text'].forEach((id) => { const el = document.getElementById(id); if (el) el.textContent = illustLabel; });
@@ -133,7 +157,10 @@ function setHero() {
 
 function renderWorks() {
   const grid = document.getElementById('works-grid');
-  grid.innerHTML = appData.works.map((work, index) => `<button class="work-card work-${index + 1}" data-detail="works" data-id="${work.id}" data-video="${hoverVideoUrl(work)}">${mediaMarkup(work, 'work-media')}<span class="work-copy"><small>${work.category || 'Live2D'}</small><b>${work.title}</b><em>more <i>→</i></em></span></button>`).join('');
+  grid.innerHTML = appData.works.map((work, index) => {
+    const specs = [work.plan, work.motion, work.options].map((value) => String(value || '').trim()).filter(Boolean);
+    return `<button class="work-card work-${index + 1}" data-detail="works" data-id="${work.id}" data-video="${hoverVideoUrl(work)}">${mediaMarkup(work, 'work-media')}<span class="work-copy"><small>${work.category || 'Live2D'}</small><b>${work.title}</b>${specs.length ? `<span class="work-spec">${specs.map((value) => `<i>${value}</i>`).join('')}</span>` : ''}<em>more <i>→</i></em></span></button>`;
+  }).join('');
 }
 
 function renderModels() {
@@ -172,18 +199,24 @@ function collectEstimate() {
   const chardesChecked = chardesignOn && Boolean(document.getElementById('chardesign-toggle')?.checked);
   const partsReadyChecked = Boolean(document.getElementById('parts-ready-toggle')?.checked);
   let hasQuote = false;
-  let subtotal = Number(plan?.price || 0) + Number(motion?.price || 0);
-  if (illustChecked) subtotal += Number(appData.settings.illustration_price_min || 0);
-  if (chardesChecked) subtotal += Number(appData.settings.chardesign_price_min || 0);
-  document.querySelectorAll('input[name="options"]:checked').forEach((input) => { const option = appData.options.find((item) => String(item.id) === input.value); if (option?.price === null) hasQuote = true; else subtotal += Number(option?.price || 0); });
+  const baseFee = Number(plan?.price || 0) + Number(motion?.price || 0);
+  let extraFee = 0;
+  let subtotal = baseFee;
+  if (illustChecked) { subtotal += Number(appData.settings.illustration_price_min || 0); extraFee += Number(appData.settings.illustration_price_min || 0); }
+  if (chardesChecked) { subtotal += Number(appData.settings.chardesign_price_min || 0); extraFee += Number(appData.settings.chardesign_price_min || 0); }
+  document.querySelectorAll('input[name="options"]:checked').forEach((input) => { const option = appData.options.find((item) => String(item.id) === input.value); if (option?.price === null) hasQuote = true; else { subtotal += Number(option?.price || 0); extraFee += Number(option?.price || 0); } });
   const selectedOptions = [...document.querySelectorAll('input[name="options"]:checked')].map((el) => appData.options.find((item) => String(item.id) === el.value)?.name).filter(Boolean);
   const couponOn = String(appData.settings.coupon_enabled ?? true) !== 'false';
   const discount = couponOn ? Math.round(subtotal * (Number(appData.settings.coupon_percent || 0) / 100)) : 0;
-  return { plan, motion, chardesignOn, illustChecked, chardesChecked, partsReadyChecked, selectedOptions, subtotal, discount, total: subtotal - discount, hasQuote, hasRange: illustChecked || chardesChecked };
+  return { plan, motion, chardesignOn, illustChecked, chardesChecked, partsReadyChecked, selectedOptions, baseFee, extraFee, subtotal, discount, total: subtotal - discount, hasQuote, hasRange: illustChecked || chardesChecked };
 }
 function updateEstimate() {
   const est = collectEstimate();
   document.querySelectorAll('[data-high-only="true"]').forEach((card) => { const disabled = String(est.motion?.id) !== 'high'; card.classList.toggle('unavailable', disabled); const input = card.querySelector('input'); input.disabled = disabled; if (disabled) input.checked = false; });
+  const baseEl = document.getElementById('est-base');
+  const extraEl = document.getElementById('est-extra');
+  if (baseEl) baseEl.textContent = yen(est.baseFee);
+  if (extraEl) extraEl.textContent = `＋${yen(est.extraFee)}`;
   document.getElementById('subtotal').textContent = yen(est.subtotal);
   document.getElementById('discount').textContent = `−${yen(est.discount)}`;
   document.getElementById('total').textContent = yen(est.total);
@@ -218,10 +251,27 @@ function renderAddonText() {
   container.innerHTML = html;
 }
 
+let faqCategory = 'all';
 function renderFaqs() {
   const list = document.getElementById('faq-list');
   if (!list) return;
-  list.innerHTML = appData.faqs.map((faq) => `<details class="faq-item"><summary>${faq.question}<i>＋</i></summary><p>${faq.answer}</p></details>`).join('');
+  const categories = [...new Set(appData.faqs.map((faq) => String(faq.category || '').trim()).filter(Boolean))];
+  const hasUncategorized = appData.faqs.some((faq) => !String(faq.category || '').trim());
+  const filters = document.getElementById('faq-filters');
+  if (filters) {
+    if (faqCategory !== 'all' && faqCategory !== '__none__' && !categories.includes(faqCategory)) faqCategory = 'all';
+    // カテゴリが1つも設定されていないときは、絞り込みは表示しない（従来どおりの見た目）
+    filters.hidden = categories.length === 0;
+    filters.innerHTML = categories.length ? [['all', 'すべて'], ...categories.map((name) => [name, name]), ...(hasUncategorized ? [['__none__', 'その他']] : [])]
+      .map(([value, label]) => `<button type="button" class="faq-chip ${faqCategory === value ? 'is-active' : ''}" data-faq-category="${value}">${label}</button>`).join('') : '';
+  }
+  const visible = appData.faqs.filter((faq) => {
+    const category = String(faq.category || '').trim();
+    if (faqCategory === 'all') return true;
+    if (faqCategory === '__none__') return !category;
+    return category === faqCategory;
+  });
+  list.innerHTML = visible.map((faq) => `<details class="faq-item"><summary>${faq.question}<i>＋</i></summary><p>${faq.answer}</p></details>`).join('');
 }
 
 function renderReviews() {
@@ -335,6 +385,11 @@ async function notifyDiscord(kind, data) {
   }
 }
 
+function workSpecList(work) {
+  const rows = [['制作内容', work.category], ['プラン', work.plan], ['可動域', work.motion], ['追加オプション', work.options]].filter(([, value]) => String(value || '').trim());
+  return rows.length ? `<dl class="modal-spec">${rows.map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join('')}</dl>` : '';
+}
+
 function openDetail(type, id) {
   const item = appData[type].find((entry) => String(entry.id) === String(id));
   if (!item) return;
@@ -342,7 +397,7 @@ function openDetail(type, id) {
   const isVideo = item.media_type === 'video' || isVideoSource(media);
   const categoryLabel = { motions: '可動域の見本', options: 'オプションの見本' }[type];
   const modal = document.getElementById('detail-modal');
-  document.getElementById('modal-body').innerHTML = `${media ? (isVideo ? `<video src="${media}" controls autoplay loop playsinline style="max-height:min(72vh,600px);width:auto;max-width:100%"></video>` : `<img src="${media}" alt="${item.title || item.name}" />`) : '<div class="modal-placeholder">✦</div>'}<div class="modal-copy"><small>${item.category || categoryLabel || 'LIVE2D MODEL'}</small><h2>${item.title || item.name}</h2><p class="modal-credit">${item.credit || ''}</p><p>${item.description || '詳細は準備中です。'}</p></div>`;
+  document.getElementById('modal-body').innerHTML = `${media ? (isVideo ? `<video src="${media}" controls autoplay loop playsinline style="max-height:min(72vh,600px);width:auto;max-width:100%"></video>` : `<img src="${media}" alt="${item.title || item.name}" />`) : '<div class="modal-placeholder">✦</div>'}<div class="modal-copy"><small>${item.category || categoryLabel || 'LIVE2D MODEL'}</small><h2>${item.title || item.name}</h2><p class="modal-credit">${item.credit || ''}</p>${type === 'works' ? workSpecList(item) : ''}<p>${item.description || '詳細は準備中です。'}</p></div>`;
   modal.showModal();
 }
 
@@ -371,6 +426,13 @@ function setupInteractions() {
   setupDeselectableChoice('motion-choices', 'motion');
   document.getElementById('consult-button').addEventListener('click', () => openInquiry());
   document.getElementById('addon-consult-button')?.addEventListener('click', () => openInquiry());
+  document.getElementById('contact-consult-button')?.addEventListener('click', () => openInquiry());
+  document.getElementById('faq-filters')?.addEventListener('click', (event) => {
+    const chip = event.target.closest('[data-faq-category]');
+    if (!chip) return;
+    faqCategory = chip.dataset.faqCategory;
+    renderFaqs();
+  });
   document.getElementById('inquiry-form').addEventListener('submit', submitInquiry);
   document.getElementById('contact-method').addEventListener('change', updateContactFields);
   document.addEventListener('click', (event) => { const buy = event.target.closest('[data-buy]'); if (buy) { const product = appData.products.find((entry) => String(entry.id) === String(buy.dataset.buy)); if (product && !product.is_sold) openInquiry(`完成モデル：${product.name}のお迎え`); return; } const button = event.target.closest('[data-detail]'); if (button) { event.preventDefault(); event.stopPropagation(); openDetail(button.dataset.detail, button.dataset.id); return; } if (event.target.closest('.modal-close') || event.target.closest('[data-close-inquiry]')) event.target.closest('dialog')?.close(); });
