@@ -205,6 +205,8 @@ async function handleAgreeSubmit(event) {
 }
 
 function init() {
+  const initialSerial = new URLSearchParams(location.search).get('serial');
+  if (initialSerial) $('#oc-serial').value = initialSerial;
   $('#oc-code-form').addEventListener('submit', handleCodeSubmit);
   $('#oc-agree-form').addEventListener('submit', handleAgreeSubmit);
   $('#oc-agree-form').addEventListener('change', updateAgreeButtonState);

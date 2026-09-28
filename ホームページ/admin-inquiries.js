@@ -390,6 +390,7 @@ let currentSearch = '';
 let statusFilter = 'all';
 let paymentFilter = 'all';
 let dueFilter = 'all';
+let planFilter = 'all';
 let memoTimers = {};
 let editingId = null;
 let deleteTargetId = null;
@@ -420,6 +421,51 @@ function stepsOf(item) { const ids = stepsForItem(item).map((step) => step.id); 
 function filesOf(item) { return Array.isArray(item.files) ? item.files : []; }
 function extrasOf(item) { return Array.isArray(item.extra_items) ? item.extra_items : []; }
 function isActive(item) { return !['completed', 'cancelled', 'delivered'].includes(orderStatusOf(item)); }
+
+/* ===== 追加：一覧・詳細で使う「表示用ステータス」（既存の order_status / replied などから計算するだけ。データは変更しません） ===== */
+const DISPLAY_STATUS = {
+  unreplied: { label: '未返信', cls: 'ds-unreplied', mark: '●', attention: true },
+  hearing: { label: 'ヒアリング中', cls: 'ds-hearing', mark: '◔', attention: false },
+  pricewait: { label: '料金確認待ち', cls: 'ds-pricewait', mark: '◐', attention: true },
+  agreewait: { label: '同意待ち', cls: 'ds-agreewait', mark: '◑', attention: true },
+  agreed: { label: '同意済み', cls: 'ds-agreed', mark: '✓', attention: false },
+  working: { label: '制作中', cls: 'ds-working', mark: '▶', attention: false },
+  reviewing: { label: '確認中', cls: 'ds-reviewing', mark: '◎', attention: false },
+  delivered: { label: '納品済み', cls: 'ds-delivered', mark: '★', attention: false },
+  cancelled: { label: 'キャンセル', cls: 'ds-cancelled', mark: '×', attention: false }
+};
+
+function displayStatusKey(item) {
+  const os = orderStatusOf(item);
+  if (os === 'cancelled' || item.cancelled) return 'cancelled';
+  if (os === 'delivered' || os === 'completed') return 'delivered';
+  if (!item.replied) return 'unreplied';
+  if (os === 'awaiting' || os === 'final') return 'reviewing';
+  if (os === 'working' || os === 'revising') return 'working';
+  if (item.confirmation_agreed_at) return 'agreed';
+  if (Number(item.total || 0) > 0) return 'agreewait';
+  return (item.hearing_summary && String(item.hearing_summary).trim()) ? 'pricewait' : 'hearing';
+}
+
+function displayStatusOf(item) { const key = displayStatusKey(item); return { key, ...DISPLAY_STATUS[key] }; }
+
+// 「今すぐ対応が必要な理由」の一覧（空なら要対応ではない）
+function attentionReasons(item) {
+  const reasons = [];
+  const ds = displayStatusOf(item);
+  if (ds.attention) reasons.push(ds.label);
+  if (isActive(item)) {
+    const due = dueInfo(item);
+    const days = daysUntil(String(item.due_date || '').slice(0, 10));
+    if (due.level === 'overdue') reasons.push('納期超過');
+    else if (due.level === 'today') reasons.push('本日納期');
+    else if (days !== null && days >= 0 && days <= 3) reasons.push(`納期まで${days}日`);
+  }
+  if (awaitingTooLong(item)) reasons.push('確認待ちが長引いています');
+  if (stalled(item)) reasons.push('制作が止まっています');
+  if (revisionOver(item)) reasons.push('無料修正回数を超過');
+  return reasons;
+}
 
 /* ===== 追加機能：あとからオプションを追加できるようにする ===== */
 let catalogOptions = [];
@@ -579,7 +625,18 @@ function contactRow(item) {
     <div class="contact-actions"><a class="mail-button" href="mailto:${encodeURIComponent(address)}?subject=${subject}&body=${body}">メールを送る <span>→</span></a></div>`;
 }
 
+function buildPlanFilter() {
+  const select = $('#plan-filter');
+  if (!select) return;
+  const plans = [...new Set(inquiries.map((item) => (item.plan || '').trim()).filter(Boolean))];
+  const hasNone = inquiries.some((item) => !(item.plan || '').trim());
+  select.innerHTML = '<option value="all">プラン：すべて</option>' + plans.map((plan) => `<option value="${escapeHtml(plan)}">${escapeHtml(plan)}</option>`).join('') + (hasNone ? '<option value="__none__">プラン未設定</option>' : '');
+  select.value = (planFilter === 'all' || plans.includes(planFilter) || (planFilter === '__none__' && hasNone)) ? planFilter : 'all';
+  planFilter = select.value;
+}
+
 function updateCounts() {
+  buildPlanFilter();
   const count = (predicate) => inquiries.filter(predicate).length;
   $('#count-all').textContent = inquiries.length;
   $('#count-pending').textContent = count((item) => !item.replied);
@@ -595,7 +652,14 @@ function matchesSearch(item, term) {
 function passesFilters(item) {
   if (currentFilter === 'pending' && item.replied) return false;
   if (currentFilter === 'done' && !item.replied) return false;
-  if (statusFilter !== 'all' && orderStatusOf(item) !== statusFilter) return false;
+  if (statusFilter !== 'all') {
+    if (statusFilter.startsWith('d:')) { if (displayStatusKey(item) !== statusFilter.slice(2)) return false; }
+    else if (orderStatusOf(item) !== statusFilter) return false;
+  }
+  if (planFilter !== 'all') {
+    if (planFilter === '__none__') { if (item.plan) return false; }
+    else if ((item.plan || '') !== planFilter) return false;
+  }
   if (paymentFilter !== 'all' && paymentOf(item) !== paymentFilter) return false;
   const level = dueInfo(item).level;
   if (dueFilter === 'overdue' && !(level === 'overdue' && isActive(item))) return false;
@@ -617,6 +681,11 @@ function sortInquiries(list) {
     if (!b.due_date) return -1;
     return new Date(a.due_date) - new Date(b.due_date);
   });
+  if (currentSort === 'attention') return sorted.sort((a, b) => {
+    const diff = attentionReasons(b).length - attentionReasons(a).length;
+    if (diff !== 0) return diff;
+    return new Date(b.created_date) - new Date(a.created_date);
+  });
   if (currentSort === 'unpaid') return sorted.sort((a, b) => {
     const aUnpaid = a.payment_status !== 'paid' ? 0 : 1;
     const bUnpaid = b.payment_status !== 'paid' ? 0 : 1;
@@ -636,19 +705,15 @@ function renderList() {
     const st = STATUS[status];
     const pay = PAYMENT[paymentOf(item)];
     const due = dueInfo(item);
-    const prog = progressInfo(item);
+    const ds = displayStatusOf(item);
+    const reasons = attentionReasons(item);
     const isEditing = editingId === item.id;
-    const priceText = item.total ? yen(item.total) : '要お見積り';
-    const revText = `修正 ${item.revision_used || 0} / ${item.revision_limit ?? 2}回`;
-    const alerts = [];
-    if (due.level === 'overdue') alerts.push(`<i class="card-alert is-overdue">⚠ 納期超過</i>`);
-    if (due.level === 'today') alerts.push(`<i class="card-alert is-today">⚠ 本日納期</i>`);
-    if (awaitingTooLong(item)) alerts.push(`<i class="card-alert is-wait">⚠ 長期間確認待ち</i>`);
-    if (stalled(item)) alerts.push(`<i class="card-alert is-wait">⚠ 制作が止まっています</i>`);
-    if (revisionOver(item)) alerts.push(`<i class="card-alert is-rev">⚠ 無料修正回数超過</i>`);
+    const priceText = Number(item.total || 0) > 0 ? `${Number(item.total).toLocaleString('ja-JP')}円` : '要お見積り';
+    const dueText = item.due_date ? `${fmtDate(item.due_date)}（${due.label}）` : '未設定';
+    const revText = `${item.revision_used || 0} / ${item.revision_limit ?? 2}回`;
     const illustCount = illustFormCounts[item.serial] || 0;
     const illustBanner = illustCount ? `<button type="button" class="illustform-banner" data-open-detail="${item.id}" data-open-tab="illustform">📋 依頼票 ${illustCount}件届いています <span>今すぐ確認する →</span></button>` : '';
-    const metaRow = isEditing
+    const keyInfo = isEditing
       ? `<div class="inquiry-edit-form" data-id="${item.id}">
           <label>プラン<input data-field="plan" value="${escapeHtml(item.plan || '')}" /></label>
           <label>可動域<input data-field="motion" value="${escapeHtml(item.motion || '')}" /></label>
@@ -656,55 +721,45 @@ function renderList() {
           <label>お支払い目安（円）<input data-field="total" type="number" min="0" value="${Number(item.total || 0)}" /></label>
           <div class="edit-actions"><button class="save-edit-button" data-id="${item.id}">保存する</button><button class="cancel-edit-button">閉じる</button></div>
         </div>`
-      : `<div class="inquiry-meta-row">
-          <span class="meta-pill price">お支払い目安 ${priceText}</span>
-          <span class="meta-pill due is-${due.level}">納期：${fmtDate(item.due_date)}（${due.label}）</span>
-          <span class="meta-pill">${revText}</span>
-        </div>
-        <div class="card-progress-line"><div class="card-progress-bar"><i style="width:${prog.percent}%"></i></div><span>${prog.done} / ${prog.total} 完了（${prog.percent}%）</span></div>
-        ${alerts.length ? `<div class="card-alerts">${alerts.join('')}</div>` : ''}`;
-    return `<details class="inquiry-card ${st.cls}" data-id="${item.id}">
-      <summary class="inquiry-card-summary">
-        <div class="inquiry-card-top">
-          <div class="inquiry-card-id">
+      : `<dl class="ic-grid">
+          <div><dt>プラン</dt><dd>${escapeHtml(item.plan || '未設定')}</dd></div>
+          <div><dt>可動域</dt><dd>${escapeHtml(item.motion || '未設定')}</dd></div>
+          <div><dt>料金</dt><dd class="ic-price">${priceText}</dd></div>
+          <div><dt>納期</dt><dd class="is-${due.level}">${dueText}</dd></div>
+          <div><dt>修正</dt><dd class="${revisionOver(item) ? 'is-over' : ''}">${revText}</dd></div>
+          <div><dt>入金</dt><dd><span class="payment-badge ${pay.cls}">${pay.label}</span></dd></div>
+        </dl>`;
+    return `<article class="inquiry-card ${st.cls} ${ds.cls} ${reasons.length ? 'is-attention' : ''}" data-id="${item.id}">
+      <div class="ic-head">
+        <div class="ic-title-block">
+          <h3 class="ic-name">${escapeHtml(item.request_name)}</h3>
+          <div class="ic-sub">
             <span class="serial-tag">${escapeHtml(item.serial)}</span>
             <button type="button" class="serial-copy-button" data-copy-text="${escapeHtml(item.serial)}" title="コードをコピー">コピー</button>
-            <span class="order-status-badge ${st.cls}">${st.label}</span>
-            ${statusOf(item) === 'pending' ? '<span class="status-badge pending">未返信</span>' : '<span class="status-badge done">返信済み ♡</span>'}
-          </div>
-          <div class="inquiry-card-meta-right">
-            <time>${item.created_date ? new Date(item.created_date).toLocaleString('ja-JP') : ''}</time>
-            <span class="inquiry-card-toggle">開く <i>▾</i></span>
+            <span class="ic-date">受付：${item.created_date ? new Date(item.created_date).toLocaleString('ja-JP') : '—'}</span>
           </div>
         </div>
-        <h3 class="inquiry-card-title">${escapeHtml(item.request_name)}</h3>
-        ${illustBanner}
-      </summary>
-      <div class="inquiry-card-body">
-        <div class="scope-tag-row">${scopeTagsHtml(item)}</div>
-        ${metaRow}
-        ${item.message ? `<p class="inquiry-message">${escapeHtml(item.message)}</p>` : '<p class="inquiry-message is-empty">（依頼内容の記載なし）</p>'}
-        <div class="inquiry-contact-row">
-          ${contactRow(item)}
-          <span class="payment-badge ${pay.cls}">${pay.label}</span>
-        </div>
-        <label class="memo-label">スタッフ用メモ（サイトには表示されません）
-          <textarea class="memo-box" data-id="${item.id}" rows="2" placeholder="対応内容や次にやることをメモ...">${escapeHtml(item.memo || '')}</textarea>
-        </label>
-        <div class="inquiry-card-actions">
-          <button class="detail-button" data-action="detail" data-id="${item.id}">詳細・管理 <span>→</span></button>
-          <button class="edit-button" data-action="edit" data-id="${item.id}">${isEditing ? '編集中…' : '編集'}</button>
-          <button class="reply-toggle-button" data-action="toggle-reply" data-id="${item.id}" data-replied="${item.replied}">${item.replied ? '未返信に戻す' : '返信済みにする'}</button>
-          <button class="delete-button" data-action="delete" data-id="${item.id}">削除</button>
+        <div class="ic-status-block">
+          <span class="ds-badge ${ds.cls}"><i>${ds.mark}</i>${ds.label}</span>
+          <span class="ic-raw-status">${st.label}</span>
         </div>
       </div>
-    </details>`;
+      ${reasons.length ? `<p class="ic-attn"><b>要対応</b>${reasons.map(escapeHtml).join('・')}</p>` : ''}
+      ${illustBanner}
+      ${keyInfo}
+      <div class="ic-actions">
+        <button class="detail-button" data-action="detail" data-id="${item.id}">詳細を見る <span>→</span></button>
+        <button class="reply-toggle-button" data-action="toggle-reply" data-id="${item.id}" data-replied="${item.replied}">${item.replied ? '未返信に戻す' : '返信済みにする'}</button>
+        <div class="ic-more">
+          <button type="button" class="ic-more-button" data-more-toggle aria-label="その他の操作" aria-expanded="false">︙</button>
+          <div class="ic-more-menu" hidden>
+            <button type="button" class="edit-button" data-action="edit" data-id="${item.id}">${isEditing ? '編集を閉じる' : '内容を編集'}</button>
+            <button type="button" class="delete-button" data-action="delete" data-id="${item.id}">削除</button>
+          </div>
+        </div>
+      </div>
+    </article>`;
   }).join('');
-  list.querySelectorAll('.inquiry-card').forEach((details) => {
-    const id = details.dataset.id;
-    if (openCardIds.has(id)) details.open = true;
-    details.addEventListener('toggle', () => { if (details.open) openCardIds.add(id); else openCardIds.delete(id); });
-  });
 }
 
 function buildTaskList() {
@@ -877,7 +932,9 @@ async function refreshItem(id, patch) {
 
 function buildSelectOptions() {
   const statusSelect = $('#status-filter');
-  statusSelect.innerHTML = '<option value="all">ステータス：すべて</option>' + Object.entries(STATUS).map(([key, st]) => `<option value="${key}">${st.label}</option>`).join('');
+  statusSelect.innerHTML = '<option value="all">ステータス：すべて</option>'
+    + '<optgroup label="進行状況">' + Object.entries(DISPLAY_STATUS).map(([key, ds]) => `<option value="d:${key}">${ds.label}</option>`).join('') + '</optgroup>'
+    + '<optgroup label="詳細ステータス">' + Object.entries(STATUS).map(([key, st]) => `<option value="${key}">${st.label}</option>`).join('') + '</optgroup>';
   const paymentSelect = $('#payment-filter');
   paymentSelect.innerHTML = '<option value="all">支払い：すべて</option>' + Object.entries(PAYMENT).map(([key, pay]) => `<option value="${key}">${pay.label}</option>`).join('');
   $('#od-status').innerHTML = Object.entries(STATUS).map(([key, st]) => `<option value="${key}">${st.label}</option>`).join('');
@@ -933,7 +990,37 @@ function refreshTotalLine() {
   $('#od-total').textContent = yen(total);
 }
 
+/* ===== 追加：詳細画面の「① 基本情報」サマリーと「⑤ 進捗」ステッパー ===== */
+const STEPPER_STEPS = ['受付', 'ヒアリング', '料金確認', '同意', '制作中', '確認', '納品完了'];
+const STEPPER_POSITION = { unreplied: [0, false], hearing: [1, false], pricewait: [2, false], agreewait: [3, false], agreed: [3, true], working: [4, false], reviewing: [5, false], delivered: [6, true], cancelled: [-1, false] };
+
+function renderDetailSummary(item) {
+  const box = $('#od-summary');
+  if (!box || !item) return;
+  // 画面上で変更中の値（ステータス・返信済み）を反映して表示する
+  const draft = { ...item, order_status: $('#od-status')?.value || item.order_status, replied: $('#od-replied') ? $('#od-replied').checked : item.replied };
+  const ds = displayStatusOf(draft);
+  $('#od-sum-name').textContent = item.request_name || '';
+  $('#od-sum-serial').textContent = `依頼番号：${item.serial}`;
+  $('#od-sum-created').textContent = `受付：${item.created_date ? new Date(item.created_date).toLocaleString('ja-JP') : '—'}`;
+  $('#od-sum-contact').textContent = contactSummary(item);
+  const badge = $('#od-sum-ds');
+  badge.className = `ds-badge ${ds.cls}`;
+  badge.innerHTML = `<i>${ds.mark}</i>${ds.label}`;
+  const [cur, curDone] = STEPPER_POSITION[ds.key] || [-1, false];
+  $('#od-stepper').innerHTML = STEPPER_STEPS.map((label, i) => {
+    const done = cur >= 0 && (i < cur || (i === cur && curDone));
+    const current = i === cur && !curDone;
+    return `<li class="${done ? 'is-done' : ''} ${current ? 'is-current' : ''}"><span class="od-step-dot">${done ? '✓' : i + 1}</span><b>${label}</b></li>`;
+  }).join('') + (ds.key === 'cancelled' ? '<li class="od-step-cancelled">この依頼はキャンセルされています</li>' : '');
+  const statusLink = $('#od-link-status');
+  const confirmLink = $('#od-link-confirm');
+  if (statusLink) statusLink.href = `status.html?serial=${encodeURIComponent(item.serial)}`;
+  if (confirmLink) confirmLink.href = `order-confirmation.html?serial=${encodeURIComponent(item.serial)}`;
+}
+
 function refreshRepliedBadge(item) {
+  renderDetailSummary(item);
   const el = $('#od-replied-badge');
   if (!el) return;
   const on = $('#od-replied').checked;
@@ -1009,6 +1096,7 @@ async function confirmIllustFormEntry(id, buttonEl) {
 }
 
 function refreshCurrentStage(item) {
+  renderDetailSummary(item);
   const el = $('#od-current-stage');
   if (!el) return;
   const key = item.cancelled ? 'cancelled' : (STATUS[$('#od-status').value] ? $('#od-status').value : 'received');
@@ -1362,6 +1450,8 @@ document.addEventListener('change', (event) => {
   if (paymentSelect) { paymentFilter = paymentSelect.value; renderList(); return; }
   const dueSelect = event.target.closest('#due-filter');
   if (dueSelect) { dueFilter = dueSelect.value; renderList(); return; }
+  const planSelect = event.target.closest('#plan-filter');
+  if (planSelect) { planFilter = planSelect.value; renderList(); return; }
   const sortSelect = event.target.closest('#sort-filter');
   if (sortSelect) { currentSort = sortSelect.value; renderList(); return; }
 });
@@ -1384,3 +1474,15 @@ document.getElementById('expr-catalog-form').addEventListener('submit', async (e
 });
 
 checkAuth();
+
+/* ===== 追加機能：依頼カードの「︙」メニュー（編集・削除など、普段使わない操作） ===== */
+document.addEventListener('click', (event) => {
+  const toggle = event.target.closest('[data-more-toggle]');
+  document.querySelectorAll('.ic-more-menu').forEach((menu) => {
+    const owner = menu.closest('.ic-more');
+    const isOwn = toggle && owner && owner.contains(toggle);
+    const willOpen = isOwn && menu.hidden;
+    menu.hidden = !willOpen;
+    owner?.querySelector('[data-more-toggle]')?.setAttribute('aria-expanded', String(willOpen));
+  });
+});

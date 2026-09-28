@@ -32,29 +32,31 @@
           </details>
         </section>
 
-        <div class="inquiry-filter-bar">
+        <div class="inquiry-filter-bar inquiry-admin-bar">
+          <input id="inquiry-search" type="search" placeholder="🔍 依頼者名・シリアル番号・連絡先・内容で検索" />
           <div id="inquiry-filters" class="inquiry-filters">
             <button class="filter-chip is-active" data-filter="all">すべて <span id="count-all">0</span></button>
             <button class="filter-chip" data-filter="pending">未返信 <span id="count-pending">0</span></button>
             <button class="filter-chip" data-filter="done">返信済み <span id="count-done">0</span></button>
           </div>
           <div class="filter-selects">
-            <select id="status-filter" class="filter-select"></select>
-            <select id="payment-filter" class="filter-select"></select>
-            <select id="due-filter" class="filter-select">
+            <select id="status-filter" class="filter-select" aria-label="ステータス"></select>
+            <select id="plan-filter" class="filter-select" aria-label="プラン"></select>
+            <select id="payment-filter" class="filter-select" aria-label="支払い"></select>
+            <select id="due-filter" class="filter-select" aria-label="納期">
               <option value="all">納期：すべて</option>
               <option value="overdue">納期超過</option>
               <option value="week">7日以内</option>
               <option value="none">納期未設定</option>
             </select>
+            <select id="sort-filter" class="filter-select" aria-label="並び替え">
+              <option value="new">並び替え：受付が新しい順</option>
+              <option value="old">受付が古い順</option>
+              <option value="due">納期が近い順</option>
+              <option value="attention">要対応を上に</option>
+              <option value="unpaid">未払いを上に</option>
+            </select>
           </div>
-          <input id="inquiry-search" type="search" placeholder="シリアル・依頼名・連絡先・内容で検索" />
-          <select id="sort-filter" class="filter-select">
-            <option value="new">新しい順</option>
-            <option value="old">古い順</option>
-            <option value="due">納期が近い順</option>
-            <option value="unpaid">未払いを上に</option>
-          </select>
         </div>
         <div id="inquiries-admin-list" class="inquiry-list"></div>
         <dialog id="delete-confirm"><div class="confirm-box">
@@ -83,8 +85,22 @@
           <div class="od-panels">
             <section id="panel-basic" class="od-panel is-open">
 
+              <div class="od-summary" id="od-summary">
+                <div class="od-summary-top">
+                  <div class="od-summary-main">
+                    <p class="od-summary-cap">① 基本情報</p>
+                    <h2 class="od-summary-name" id="od-sum-name"></h2>
+                    <p class="od-summary-meta"><span id="od-sum-serial"></span><span id="od-sum-created"></span><span id="od-sum-contact"></span></p>
+                  </div>
+                  <span id="od-sum-ds" class="ds-badge"></span>
+                </div>
+                <p class="od-summary-cap">⑤ 進捗</p>
+                <ol class="od-stepper" id="od-stepper"></ol>
+                <div class="od-customer-links"><span>依頼者向けページ：</span><a id="od-link-status" target="_blank" rel="noopener">進捗確認ページ ↗</a><a id="od-link-confirm" target="_blank" rel="noopener">制作内容のご確認ページ ↗</a></div>
+              </div>
+
               <div class="dash-card dash-overview">
-                <h3 class="dash-card-title"><span class="dash-card-icon">📋</span>依頼概要</h3>
+                <h3 class="dash-card-title"><span class="dash-card-icon">📋</span>② プラン ／ ③ 制作内容</h3>
                 <div class="dash-grid-3">
                   <label class="dash-field"><span class="dash-field-label">基本プラン</span><input id="od-plan" /></label>
                   <label class="dash-field"><span class="dash-field-label">可動域</span><input id="od-motion" /></label>
@@ -104,7 +120,7 @@
               </div>
 
               <div class="dash-card dash-progress-card">
-                <h3 class="dash-card-title"><span class="dash-card-icon">🚀</span>制作・進行状況</h3>
+                <h3 class="dash-card-title"><span class="dash-card-icon">🚀</span>② 料金 ／ ④ 納期・修正</h3>
                 <div class="dash-highlight-row">
                   <div class="dash-highlight dash-highlight-money">
                     <span class="dash-highlight-label">お支払い金額</span>
@@ -155,14 +171,14 @@
               </div>
 
               <div class="dash-card dash-comm-card">
-                <h3 class="dash-card-title"><span class="dash-card-icon">💬</span>コミュニケーション</h3>
+                <h3 class="dash-card-title"><span class="dash-card-icon">💬</span>① 連絡先（X・DM）</h3>
                 <div class="dash-contact-line"><span class="dash-field-label">連絡方法</span><b id="od-contact"></b></div>
                 <div id="od-contact-actions" class="dash-contact-actions"></div>
                 <button type="button" id="dm-open-templates" class="dash-dm-button is-outline">✉️ 返信テンプレを開く</button>
               </div>
 
-              <div class="dash-card dash-memo-card">
-                <h3 class="dash-card-title"><span class="dash-card-icon">📝</span>スタッフメモ<small>（クライアントには表示されません）</small></h3>
+              <div class="dash-card dash-memo-card is-staff-only">
+                <h3 class="dash-card-title"><span class="dash-card-icon">📝</span>⑥ スタッフメモ<span class="staff-only-badge">🔒 スタッフ専用・依頼者には表示されません</span></h3>
                 <textarea id="od-memo" rows="5" placeholder="髪の揺れを強める / 口角を少し上げる / 左目の開きが弱い など"></textarea>
               </div>
 
