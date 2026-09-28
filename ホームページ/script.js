@@ -390,7 +390,7 @@ function workSpecList(work) {
   return rows.length ? `<dl class="modal-spec">${rows.map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join('')}</dl>` : '';
 }
 
-const RD_SPEC_ICONS = { '制作内容': '⚙', 'プラン': '♛', '可動域': '⤢', 'イラスト': '✎', 'パーツ分け': '✂', '表情': '☺', 'その他': '⋯' };
+const RD_SPEC_ICONS = { '担当したこと': '♡', '制作内容': '⚙', 'プラン': '♛', '可動域': '⤢', 'イラスト': '✎', 'パーツ分け': '✂', '表情': '☺', 'その他': '⋯' };
 
 // モデル紹介・販売中モデルを開いたときの「詳細ページ」
 function richDetailHtml(type, item) {
@@ -402,9 +402,11 @@ function richDetailHtml(type, item) {
   const mediaIsVideo = item.media_type === 'video' || isVideoSource(media);
   const cover = item.cover_url || (!mediaIsVideo ? media : '');
   const tags = Array.isArray(d.tags) ? d.tags.filter(Boolean) : [];
-  const specs = (Array.isArray(d.specs) ? d.specs : []).filter((row) => row && row.label && row.value);
+  const rawSpecs = (Array.isArray(d.specs) ? d.specs : []).filter((row) => row && row.label && row.value);
+  // 管理画面の「担当したこと」（credit）も、制作内容の表の先頭に自動で載せる（きのぴー。が何をやったかを伝えるため）
+  const specs = (item.credit && String(item.credit).trim() && !rawSpecs.some((row) => row.label === '担当したこと')) ? [{ label: '担当したこと', value: String(item.credit).trim() }, ...rawSpecs] : rawSpecs;
   const sub = (Array.isArray(d.motion_images) ? d.motion_images : []).filter(Boolean);
-  const expressions = (Array.isArray(d.expressions) ? d.expressions : []).filter((row) => row && (row.image || row.label));
+  const expressions = (Array.isArray(d.expressions) ? d.expressions : []).filter((row) => row && row.image);
   const points = (Array.isArray(d.points) ? d.points : []).filter((row) => row && (row.title || row.text || row.image));
   const mainMotion = mediaIsVideo ? `<video src="${esc(media)}" controls playsinline preload="metadata"${cover ? ` poster="${esc(cover)}"` : ''}></video>` : (media && media !== cover ? `<img src="${esc(media)}" alt="" />` : '');
   const hasMotion = Boolean(mainMotion) || sub.length > 0;
@@ -425,7 +427,6 @@ function richDetailHtml(type, item) {
         ${item.subtitle ? `<span class="rd-model-sub">${esc(item.subtitle)}</span>` : ''}
         ${isProduct ? `<strong class="rd-price">${priceText}</strong>` : ''}
         ${tags.length ? `<div class="rd-tags">${tags.map((tag) => `<i>${esc(tag)}</i>`).join('')}</div>` : ''}
-        ${item.credit ? `<p class="rd-credit">${esc(item.credit)}</p>` : ''}
         ${item.description ? `<p class="rd-desc">${esc(item.description)}</p>` : ''}
       </div>
     </div>

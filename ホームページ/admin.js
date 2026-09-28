@@ -429,6 +429,8 @@ async function saveFormBuilder() {
    （タグ・制作内容の表・動きのサブ画像・表情の変化・こだわりポイント）
    ============================================================ */
 const DE_DEFAULT_SPEC_LABELS = ['制作内容', 'プラン', '可動域', 'イラスト', 'パーツ分け', '表情', 'その他'];
+const DE_DEFAULT_EXPRESSIONS = ['通常', '笑顔', '照れ', '怒り', '驚き'];
+const DE_SPEC_PLACEHOLDERS = { '制作内容': '例：Live2Dモデリング', 'プラン': '例：プチプラン（上半身）', '可動域': '例：低可動域', 'イラスト': '例：きのぴー。制作（オリジナル）', 'パーツ分け': '例：あり', '表情': '例：追加3種類（通常・照れ・驚き）', 'その他': '例：髪・リボン・衣装の揺れ / 呼吸 / 目・口の動き' };
 let deState = null;
 
 function deEsc(value) { return String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
@@ -439,7 +441,7 @@ function deNormalize(detail) {
     tags: Array.isArray(d.tags) ? d.tags.slice() : [],
     specs: Array.isArray(d.specs) && d.specs.length ? d.specs.map((r) => ({ label: r.label || '', value: r.value || '' })) : DE_DEFAULT_SPEC_LABELS.map((label) => ({ label, value: '' })),
     motion_images: (Array.isArray(d.motion_images) ? d.motion_images : []).map((image) => ({ image })),
-    expressions: Array.isArray(d.expressions) ? d.expressions.map((r) => ({ label: r.label || '', image: r.image || '' })) : [],
+    expressions: Array.isArray(d.expressions) && d.expressions.length ? d.expressions.map((r) => ({ label: r.label || '', image: r.image || '' })) : DE_DEFAULT_EXPRESSIONS.map((label) => ({ label, image: '' })),
     points: Array.isArray(d.points) ? d.points.map((r) => ({ title: r.title || '', text: r.text || '', image: r.image || '' })) : []
   };
 }
@@ -447,7 +449,7 @@ function deNormalize(detail) {
 function deRowHtml(list, index, row) {
   const imageBlock = (row.image !== undefined) ? `<input data-de-field="image" placeholder="画像URL（右のボタンでアップロードすると自動で入ります）" value="${deEsc(row.image)}" /><label class="de-upload">画像を選ぶ<input type="file" accept="image/*" data-de-upload hidden /></label><span class="de-thumb">${row.image ? `<img src="${deEsc(row.image)}" alt="" />` : ''}</span>` : '';
   let fields = '';
-  if (list === 'specs') fields = `<input data-de-field="label" placeholder="項目（例：プラン）" value="${deEsc(row.label)}" /><input data-de-field="value" placeholder="内容（例：プチプラン（上半身））" value="${deEsc(row.value)}" />`;
+  if (list === 'specs') fields = `<input data-de-field="label" placeholder="項目（例：プラン）" value="${deEsc(row.label)}" /><input data-de-field="value" placeholder="${deEsc(DE_SPEC_PLACEHOLDERS[row.label] || '内容（きのぴー。が担当したこと・仕様など）')}" value="${deEsc(row.value)}" />`;
   if (list === 'expressions') fields = `<input data-de-field="label" placeholder="ラベル（例：笑顔）" value="${deEsc(row.label)}" />`;
   if (list === 'points') fields = `<input data-de-field="title" placeholder="タイトル（例：表情のこだわり）" value="${deEsc(row.title)}" /><textarea data-de-field="text" rows="2" placeholder="説明">${deEsc(row.text)}</textarea>`;
   return `<div class="de-row de-row-${list}" data-de-row="${list}">${fields}${imageBlock}<button type="button" class="de-remove" data-de-remove="${list}:${index}" title="この行を削除">×</button></div>`;
@@ -458,9 +460,9 @@ function deRender() {
   const section = (list, title, hint, addLabel) => `<section class="de-section"><h3>${title}</h3><p class="de-hint">${hint}</p><div class="de-rows">${d[list].map((row, i) => deRowHtml(list, i, row)).join('')}</div><button type="button" class="od-mini-button is-ghost" data-de-add="${list}">＋ ${addLabel}</button></section>`;
   $('#de-body').innerHTML = `
     <section class="de-section"><h3>タグ</h3><p class="de-hint">モデル名の下に表示される小さなラベルです。「、」または「,」で区切って入力してください。</p><input id="de-tags" placeholder="例：オリジナル、Live2Dモデリング、低可動域、表情追加" value="${deEsc(d.tags.join('、'))}" /></section>
-    ${section('specs', '制作内容の表', '「項目」と「内容」の両方が入っている行だけ表示されます。空欄の行は表示されません。', '行を追加')}
+    ${section('specs', '制作内容の表（きのぴー。が何をやったか）', 'お客様が「こういうのがいいな」と選ぶときの目安になります。「項目」と「内容」の両方が入っている行だけ表示されます。なお、モデルの「編集」に入力した「担当したこと」は、この表の一番上に自動で表示されます。', '行を追加')}
     ${section('motion_images', '動きのサブ画像', '「実際に動かすとこんな感じ！」の横に並ぶ小さな画像です（2枚くらいがおすすめ）。大きな動画・画像は、モデルの「編集」で登録した詳細画像・動画が使われます。', '画像を追加')}
-    ${section('expressions', '表情の変化', '表情の画像とラベル（通常・笑顔・照れ…）を並べて表示します。', '表情を追加')}
+    ${section('expressions', '表情の変化（小さな写真を5枚くらい）', '表情の写真とラベルを、小さく並べて表示します。写真を入れた表情だけが表示されます（空欄の行は表示されません）。6枚以上にしたい場合は「表情を追加」を押してください。', '表情を追加')}
     ${section('points', 'こだわりポイント', '画像・タイトル・説明を1セットにして、番号つきで表示します。', 'ポイントを追加')}`;
 }
 
@@ -483,7 +485,7 @@ function deClean() {
     tags: d.tags,
     specs: d.specs.map((r) => ({ label: r.label.trim(), value: r.value.trim() })).filter((r) => r.label && r.value),
     motion_images: d.motion_images.map((r) => (r.image || '').trim()).filter(Boolean),
-    expressions: d.expressions.map((r) => ({ label: r.label.trim(), image: r.image.trim() })).filter((r) => r.label || r.image),
+    expressions: d.expressions.map((r) => ({ label: r.label.trim(), image: r.image.trim() })).filter((r) => r.image),
     points: d.points.map((r) => ({ title: r.title.trim(), text: r.text.trim(), image: r.image.trim() })).filter((r) => r.title || r.text || r.image)
   };
   const empty = !clean.tags.length && !clean.specs.length && !clean.motion_images.length && !clean.expressions.length && !clean.points.length;
