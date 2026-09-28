@@ -54,7 +54,7 @@ function flagSmallImages(container) {
     if (img.complete && img.naturalWidth) check(); else img.addEventListener('load', check, { once: true });
   });
 }
-function entityCards(type) { const list = $(`#${type}-admin-list`); list.innerHTML = (data[type] || []).map((item) => `<article class="admin-card">${thumbnail(item)}<div><b>${item.title || item.name}</b><small>${item.credit || item.category || ''} ${item.is_public ? '' : '／非公開'}</small></div><div class="admin-card-actions"><button class="edit-button" data-edit="${type}" data-id="${item.id}">編集</button><button class="delete-button" data-delete="${type}" data-id="${item.id}">削除</button></div></article>`).join('') || '<p class="empty-text">まだ登録がありません。</p>'; }
+function entityCards(type) { const list = $(`#${type}-admin-list`); list.innerHTML = (data[type] || []).map((item) => `<article class="admin-card">${thumbnail(item)}<div><b>${item.title || item.name}</b><small>${item.credit || item.category || ''} ${item.is_public ? '' : '／非公開'}</small></div><div class="admin-card-actions"><button class="edit-button" data-edit="${type}" data-id="${item.id}">編集</button>${type === 'models' ? `<button class="edit-button" data-detail-edit="models" data-id="${item.id}">詳細ページ</button>` : ''}<button class="delete-button" data-delete="${type}" data-id="${item.id}">削除</button></div></article>`).join('') || '<p class="empty-text">まだ登録がありません。</p>'; }
 function priceRows(type) { return data[type].map((item) => `<div class="price-row"><b>${item.name}</b><input type="number" value="${item.price ?? ''}" data-price="${type}" data-id="${item.id}" /><button data-save-price="${type}" data-id="${item.id}">保存</button></div>`).join('') || '<p class="empty-text">項目がありません。</p>'; }
 function mediaThumb(item) {
   if (!item.media_url) return '<span class="thumb"></span>';
@@ -114,7 +114,7 @@ async function saveFees(event) {
     await loadAll();
   } catch (error) { message(form, `保存できませんでした：${error.message}`, true); }
 }
-function productCards() { const list = $('#products-admin-list'); list.innerHTML = data.products.map((item) => `<article class="admin-card">${thumbnail(item)}<div><b>${item.name} ${item.is_sold ? '＜販売済み＞' : ''}</b><small>${item.price === null || item.price === undefined || item.price === '' ? '要お見積り' : `¥${Number(item.price).toLocaleString('ja-JP')}`} ${item.is_public ? '' : '／非公開'}</small></div><div class="admin-card-actions"><button class="edit-button" data-edit="products" data-id="${item.id}">編集</button><button class="delete-button" data-delete="products" data-id="${item.id}">削除</button></div></article>`).join('') || '<p class="empty-text">まだ出品していません。</p>'; }
+function productCards() { const list = $('#products-admin-list'); list.innerHTML = data.products.map((item) => `<article class="admin-card">${thumbnail(item)}<div><b>${item.name} ${item.is_sold ? '＜販売済み＞' : ''}</b><small>${item.price === null || item.price === undefined || item.price === '' ? '要お見積り' : `¥${Number(item.price).toLocaleString('ja-JP')}`} ${item.is_public ? '' : '／非公開'}</small></div><div class="admin-card-actions"><button class="edit-button" data-edit="products" data-id="${item.id}">編集</button><button class="edit-button" data-detail-edit="products" data-id="${item.id}">詳細ページ</button><button class="delete-button" data-delete="products" data-id="${item.id}">削除</button></div></article>`).join('') || '<p class="empty-text">まだ出品していません。</p>'; }
 function renderAll() { renderOverview(); entityCards('works'); entityCards('models'); productCards(); planCards(); motionCards(); optionCards(); faqCards(); reviewCards(); flagSmallImages(document); updateNavBadges(); }
 
 /* ===== 追加機能：サイドナビの件数バッジ ===== */
@@ -422,6 +422,144 @@ async function saveFormBuilder() {
     $('#fb-message').style.color = '#c14978';
   }
 }
+
+
+/* ============================================================
+   追加機能：モデル紹介・販売中モデルの「詳細ページ」編集
+   （タグ・制作内容の表・動きのサブ画像・表情の変化・こだわりポイント）
+   ============================================================ */
+const DE_DEFAULT_SPEC_LABELS = ['制作内容', 'プラン', '可動域', 'イラスト', 'パーツ分け', '表情', 'その他'];
+let deState = null;
+
+function deEsc(value) { return String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
+
+function deNormalize(detail) {
+  const d = detail && typeof detail === 'object' ? detail : {};
+  return {
+    tags: Array.isArray(d.tags) ? d.tags.slice() : [],
+    specs: Array.isArray(d.specs) && d.specs.length ? d.specs.map((r) => ({ label: r.label || '', value: r.value || '' })) : DE_DEFAULT_SPEC_LABELS.map((label) => ({ label, value: '' })),
+    motion_images: (Array.isArray(d.motion_images) ? d.motion_images : []).map((image) => ({ image })),
+    expressions: Array.isArray(d.expressions) ? d.expressions.map((r) => ({ label: r.label || '', image: r.image || '' })) : [],
+    points: Array.isArray(d.points) ? d.points.map((r) => ({ title: r.title || '', text: r.text || '', image: r.image || '' })) : []
+  };
+}
+
+function deRowHtml(list, index, row) {
+  const imageBlock = (row.image !== undefined) ? `<input data-de-field="image" placeholder="画像URL（右のボタンでアップロードすると自動で入ります）" value="${deEsc(row.image)}" /><label class="de-upload">画像を選ぶ<input type="file" accept="image/*" data-de-upload hidden /></label><span class="de-thumb">${row.image ? `<img src="${deEsc(row.image)}" alt="" />` : ''}</span>` : '';
+  let fields = '';
+  if (list === 'specs') fields = `<input data-de-field="label" placeholder="項目（例：プラン）" value="${deEsc(row.label)}" /><input data-de-field="value" placeholder="内容（例：プチプラン（上半身））" value="${deEsc(row.value)}" />`;
+  if (list === 'expressions') fields = `<input data-de-field="label" placeholder="ラベル（例：笑顔）" value="${deEsc(row.label)}" />`;
+  if (list === 'points') fields = `<input data-de-field="title" placeholder="タイトル（例：表情のこだわり）" value="${deEsc(row.title)}" /><textarea data-de-field="text" rows="2" placeholder="説明">${deEsc(row.text)}</textarea>`;
+  return `<div class="de-row de-row-${list}" data-de-row="${list}">${fields}${imageBlock}<button type="button" class="de-remove" data-de-remove="${list}:${index}" title="この行を削除">×</button></div>`;
+}
+
+function deRender() {
+  const d = deState.detail;
+  const section = (list, title, hint, addLabel) => `<section class="de-section"><h3>${title}</h3><p class="de-hint">${hint}</p><div class="de-rows">${d[list].map((row, i) => deRowHtml(list, i, row)).join('')}</div><button type="button" class="od-mini-button is-ghost" data-de-add="${list}">＋ ${addLabel}</button></section>`;
+  $('#de-body').innerHTML = `
+    <section class="de-section"><h3>タグ</h3><p class="de-hint">モデル名の下に表示される小さなラベルです。「、」または「,」で区切って入力してください。</p><input id="de-tags" placeholder="例：オリジナル、Live2Dモデリング、低可動域、表情追加" value="${deEsc(d.tags.join('、'))}" /></section>
+    ${section('specs', '制作内容の表', '「項目」と「内容」の両方が入っている行だけ表示されます。空欄の行は表示されません。', '行を追加')}
+    ${section('motion_images', '動きのサブ画像', '「実際に動かすとこんな感じ！」の横に並ぶ小さな画像です（2枚くらいがおすすめ）。大きな動画・画像は、モデルの「編集」で登録した詳細画像・動画が使われます。', '画像を追加')}
+    ${section('expressions', '表情の変化', '表情の画像とラベル（通常・笑顔・照れ…）を並べて表示します。', '表情を追加')}
+    ${section('points', 'こだわりポイント', '画像・タイトル・説明を1セットにして、番号つきで表示します。', 'ポイントを追加')}`;
+}
+
+function deSync() {
+  if (!deState || !$('#de-body')) return;
+  const d = deState.detail;
+  d.tags = ($('#de-tags')?.value || '').split(/[、,]/).map((t) => t.trim()).filter(Boolean);
+  ['specs', 'expressions', 'points', 'motion_images'].forEach((list) => {
+    d[list] = [...document.querySelectorAll(`#de-body [data-de-row="${list}"]`)].map((row) => {
+      const out = {};
+      row.querySelectorAll('[data-de-field]').forEach((input) => { out[input.dataset.deField] = input.value; });
+      return out;
+    });
+  });
+}
+
+function deClean() {
+  const d = deState.detail;
+  const clean = {
+    tags: d.tags,
+    specs: d.specs.map((r) => ({ label: r.label.trim(), value: r.value.trim() })).filter((r) => r.label && r.value),
+    motion_images: d.motion_images.map((r) => (r.image || '').trim()).filter(Boolean),
+    expressions: d.expressions.map((r) => ({ label: r.label.trim(), image: r.image.trim() })).filter((r) => r.label || r.image),
+    points: d.points.map((r) => ({ title: r.title.trim(), text: r.text.trim(), image: r.image.trim() })).filter((r) => r.title || r.text || r.image)
+  };
+  const empty = !clean.tags.length && !clean.specs.length && !clean.motion_images.length && !clean.expressions.length && !clean.points.length;
+  return empty ? null : clean;
+}
+
+function openDetailEditor(type, id) {
+  const item = (data[type] || []).find((entry) => String(entry.id) === String(id));
+  if (!item) return;
+  deState = { type, id: item.id, detail: deNormalize(item.detail) };
+  $('#de-title').textContent = `「${item.name || item.title}」の詳細ページ`;
+  $('#de-message').textContent = '';
+  deRender();
+  $('#detail-editor-dialog').showModal();
+}
+
+async function saveDetailEditor() {
+  deSync();
+  const message = $('#de-message');
+  message.style.color = '#c14978';
+  message.textContent = '保存中…';
+  const { error } = await db.from(deState.type).update({ detail: deClean() }).eq('id', deState.id);
+  if (error) {
+    message.textContent = /detail/.test(error.message) ? '保存できませんでした：supabase/model-detail.sql をSupabaseのSQL Editorで実行してください。' : `保存できませんでした：${error.message}`;
+    return;
+  }
+  message.style.color = '#579578';
+  message.textContent = '保存しました！';
+  showToast('詳細ページを保存しました！');
+  await loadAll();
+}
+
+document.addEventListener('click', async (event) => {
+  const openBtn = event.target.closest('[data-detail-edit]');
+  if (openBtn) { openDetailEditor(openBtn.dataset.detailEdit, openBtn.dataset.id); return; }
+  if (!deState || !event.target.closest('#detail-editor-dialog')) return;
+  if (event.target.closest('.detail-editor-close')) { $('#detail-editor-dialog').close(); return; }
+  if (event.target.closest('#de-save')) { saveDetailEditor(); return; }
+  const addBtn = event.target.closest('[data-de-add]');
+  if (addBtn) {
+    deSync();
+    const list = addBtn.dataset.deAdd;
+    const blank = { specs: { label: '', value: '' }, motion_images: { image: '' }, expressions: { label: '', image: '' }, points: { title: '', text: '', image: '' } }[list];
+    deState.detail[list].push({ ...blank });
+    deRender();
+    return;
+  }
+  const removeBtn = event.target.closest('[data-de-remove]');
+  if (removeBtn) {
+    deSync();
+    const [list, index] = removeBtn.dataset.deRemove.split(':');
+    deState.detail[list].splice(Number(index), 1);
+    deRender();
+  }
+});
+
+document.addEventListener('change', async (event) => {
+  if (!deState || !event.target.matches('[data-de-upload]')) return;
+  const file = event.target.files[0];
+  if (!file) return;
+  const row = event.target.closest('.de-row');
+  const message = $('#de-message');
+  try {
+    message.style.color = '#c14978';
+    message.textContent = '画像をアップロード中…';
+    const url = await upload(file, 0, '詳細ページの画像');
+    row.querySelector('[data-de-field="image"]').value = url;
+    row.querySelector('.de-thumb').innerHTML = `<img src="${deEsc(url)}" alt="" />`;
+    message.textContent = 'アップロードしました。忘れずに「保存」を押してください。';
+    message.style.color = '#579578';
+  } catch (error) {
+    message.style.color = '#c14978';
+    message.textContent = `アップロードできませんでした：${error.message}`;
+  }
+  event.target.value = '';
+});
 
 /* ===== 追加機能：サイドナビのハイライト＆折りたたみを開いてからジャンプ ===== */
 function setupSidebarNav() {

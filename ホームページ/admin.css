@@ -790,3 +790,30 @@ article.inquiry-card.is-attention{background:#fffafc;box-shadow:0 0 0 2px #ffcfe
   .od-summary{padding:14px 14px}
   .od-summary-name{font-size:19px}
 }
+
+/* ===== 追加機能：モデル・販売中モデルの「詳細ページ」編集ダイアログ ===== */
+.detail-editor-dialog{width:min(820px,calc(100% - 24px));max-height:90vh;max-height:90dvh;padding:0;border:0;border-radius:22px;background:#fffdfa;box-shadow:0 14px 40px rgba(120,65,100,.3)}
+.detail-editor-dialog::backdrop{background:rgba(76,49,69,.45)}
+.detail-editor-box{position:relative;max-height:90vh;max-height:90dvh;overflow-y:auto;padding:26px 26px 22px}
+.detail-editor-close{position:absolute;right:16px;top:14px;width:36px;height:36px;border:0;border-radius:50%;background:#f4eef3;font-size:18px;cursor:pointer}
+.de-lead{margin:0 0 18px;font-size:12px;line-height:1.8;color:var(--muted)}
+.de-section{margin-bottom:22px;padding:16px 18px;border-radius:16px;background:#fff7fa}
+.de-section h3{margin:0 0 4px;font-size:14px}
+.de-hint{margin:0 0 10px;font-size:10px;line-height:1.7;color:var(--muted)}
+.de-section input,.de-section textarea{width:100%;border:1px solid #ead3dd;border-radius:10px;padding:9px 12px;font:12px var(--round);background:#fff;color:var(--ink)}
+.de-rows{display:grid;gap:8px;margin-bottom:10px}
+.de-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;padding:8px;border-radius:12px;background:#fff}
+.de-row-specs{grid-template-columns:1fr 2fr auto}
+.de-row-expressions{grid-template-columns:.8fr 1.6fr auto auto auto}
+.de-row-motion_images{grid-template-columns:1fr auto auto auto}
+.de-row-points{grid-template-columns:1fr 1.4fr}
+.de-row-points textarea{grid-column:2}
+.de-upload{padding:8px 12px;border-radius:99px;background:var(--lav);color:var(--purple);font:700 10px var(--round);white-space:nowrap;cursor:pointer}
+.de-thumb{width:38px;height:38px;border-radius:8px;overflow:hidden;background:#f6e9ef}
+.de-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.de-remove{width:30px;height:30px;border:0;border-radius:50%;background:#ffe1e1;color:#c1493f;cursor:pointer}
+.de-actions{position:sticky;bottom:-22px;display:flex;align-items:center;gap:12px;padding:14px 0 4px;background:linear-gradient(180deg,rgba(255,253,250,0),#fffdfa 30%)}
+@media(max-width:700px){
+  .de-row,.de-row-specs,.de-row-expressions,.de-row-motion_images,.de-row-points{grid-template-columns:1fr}
+  .de-row-points textarea{grid-column:auto}
+}

@@ -390,9 +390,75 @@ function workSpecList(work) {
   return rows.length ? `<dl class="modal-spec">${rows.map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join('')}</dl>` : '';
 }
 
+const RD_SPEC_ICONS = { '制作内容': '⚙', 'プラン': '♛', '可動域': '⤢', 'イラスト': '✎', 'パーツ分け': '✂', '表情': '☺', 'その他': '⋯' };
+
+// モデル紹介・販売中モデルを開いたときの「詳細ページ」
+function richDetailHtml(type, item) {
+  const esc = escapeAddonHtml;
+  const d = item.detail && typeof item.detail === 'object' ? item.detail : {};
+  const isProduct = type === 'products';
+  const index = appData[type].findIndex((entry) => String(entry.id) === String(item.id));
+  const media = item.media_url || '';
+  const mediaIsVideo = item.media_type === 'video' || isVideoSource(media);
+  const cover = item.cover_url || (!mediaIsVideo ? media : '');
+  const tags = Array.isArray(d.tags) ? d.tags.filter(Boolean) : [];
+  const specs = (Array.isArray(d.specs) ? d.specs : []).filter((row) => row && row.label && row.value);
+  const sub = (Array.isArray(d.motion_images) ? d.motion_images : []).filter(Boolean);
+  const expressions = (Array.isArray(d.expressions) ? d.expressions : []).filter((row) => row && (row.image || row.label));
+  const points = (Array.isArray(d.points) ? d.points : []).filter((row) => row && (row.title || row.text || row.image));
+  const mainMotion = mediaIsVideo ? `<video src="${esc(media)}" controls playsinline preload="metadata"${cover ? ` poster="${esc(cover)}"` : ''}></video>` : (media && media !== cover ? `<img src="${esc(media)}" alt="" />` : '');
+  const hasMotion = Boolean(mainMotion) || sub.length > 0;
+  const hasRight = hasMotion || expressions.length > 0 || points.length > 0;
+  const name = item.name || item.title || '';
+  const priceText = isProduct ? (item.price === null || item.price === undefined || item.price === '' ? '要お見積り' : yen(item.price)) : '';
+  const sold = isProduct && item.is_sold;
+
+  const head = isProduct
+    ? `<p class="rd-tag">READY TO ADOPT <span>♥</span></p><h2>販売中モデル</h2><p class="rd-sub">すでに完成していて、お迎えできるモデルです。</p>`
+    : `<p class="rd-tag">MEET THE MODELS <span>★</span></p><h2>モデル紹介</h2><p class="rd-sub">モデルの動きを、動画や画像で見られるギャラリーです。</p>`;
+
+  const left = `<div class="rd-card rd-model">
+      <div class="rd-cover">${cover ? `<img src="${esc(cover)}" alt="${esc(name)}" />` : '<div class="rd-cover-empty">✦</div>'}${sold ? '<i class="sold-tag">SOLD OUT</i>' : ''}</div>
+      <div class="rd-model-copy">
+        <small>${isProduct ? 'READY-MADE' : `MODEL ${String(index + 1).padStart(2, '0')}`}</small>
+        <h3>${esc(name)}</h3>
+        ${item.subtitle ? `<span class="rd-model-sub">${esc(item.subtitle)}</span>` : ''}
+        ${isProduct ? `<strong class="rd-price">${priceText}</strong>` : ''}
+        ${tags.length ? `<div class="rd-tags">${tags.map((tag) => `<i>${esc(tag)}</i>`).join('')}</div>` : ''}
+        ${item.credit ? `<p class="rd-credit">${esc(item.credit)}</p>` : ''}
+        ${item.description ? `<p class="rd-desc">${esc(item.description)}</p>` : ''}
+      </div>
+    </div>
+    ${specs.length ? `<div class="rd-card rd-specs"><p class="rd-label">WORK DETAILS</p><h4>制作内容</h4><dl>${specs.map((row) => `<div><dt><i>${RD_SPEC_ICONS[row.label] || '✦'}</i>${esc(row.label)}</dt><dd>${esc(row.value)}</dd></div>`).join('')}</dl></div>` : ''}`;
+
+  const right = `${hasMotion ? `<div class="rd-card rd-motion">
+      <div class="rd-motion-head"><div><p class="rd-label">LIVE2D MOTION</p><h4>実際に動かすとこんな感じ！</h4></div><span class="rd-bubble">表情の変化や髪・衣装の揺れなど、実際のモデルの動きをご覧いただけます！</span></div>
+      <div class="rd-motion-body ${sub.length && mainMotion ? 'has-sub' : ''}">${mainMotion ? `<div class="rd-motion-main">${mainMotion}</div>` : ''}${sub.length ? `<div class="rd-motion-sub">${sub.map((url) => `<img src="${esc(url)}" alt="" />`).join('')}</div>` : ''}</div>
+    </div>` : ''}
+    ${expressions.length ? `<div class="rd-card rd-expressions"><div class="rd-exp-head"><div><p class="rd-label">EXPRESSION</p><h4>表情の変化</h4></div><span>様々な表情を組み合わせて、豊かな表情が作れます。</span></div><div class="rd-exp-grid">${expressions.map((row) => `<figure>${row.image ? `<img src="${esc(row.image)}" alt="${esc(row.label || '')}" />` : '<div class="rd-exp-empty">✦</div>'}<figcaption>${esc(row.label || '')}</figcaption></figure>`).join('')}</div></div>` : ''}
+    ${points.length ? `<div class="rd-card rd-points"><p class="rd-label">POINT <b>こだわったポイント</b> <span>✦</span></p><ol>${points.map((row, i) => `<li>${row.image ? `<img src="${esc(row.image)}" alt="" />` : '<span class="rd-point-noimg">✦</span>'}<div><b><em>${String(i + 1).padStart(2, '0')}</em>${esc(row.title || '')}</b><p>${esc(row.text || '').replace(/\n/g, '<br>')}</p></div></li>`).join('')}</ol></div>` : ''}`;
+
+  const cta = `<div class="rd-cta">
+      ${cover ? `<img class="rd-cta-img" src="${esc(cover)}" alt="" />` : ''}
+      <span class="rd-cta-bubble">${isProduct ? 'このモデルのお迎えについて、詳しく相談できます♡' : 'このモデルの制作について、詳しく相談できます♡'}</span>
+      <button type="button" class="button bubble rd-cta-button" data-rd-consult="${type}:${item.id}" ${sold ? 'disabled' : ''}>${sold ? '販売済みです' : (isProduct ? 'このモデルをお迎えする' : 'このモデルについて相談する')} <span>${sold ? '' : '→'}</span></button>
+    </div>`;
+
+  return `<div class="rd-wrap"><header class="rd-head">${head}</header><div class="rd-layout ${hasRight ? '' : 'is-single'}"><div class="rd-left">${left}</div>${hasRight ? `<div class="rd-right">${right}</div>` : ''}</div>${cta}</div>`;
+}
+
 function openDetail(type, id) {
   const item = appData[type].find((entry) => String(entry.id) === String(id));
   if (!item) return;
+  const dialog = document.getElementById('detail-modal');
+  const isRich = type === 'models' || type === 'products';
+  dialog.classList.toggle('rich-detail', isRich);
+  if (isRich) {
+    document.getElementById('modal-body').innerHTML = richDetailHtml(type, item);
+    dialog.showModal();
+    dialog.scrollTop = 0;
+    return;
+  }
   const media = item.media_url || item.cover_url;
   const isVideo = item.media_type === 'video' || isVideoSource(media);
   const categoryLabel = { motions: '可動域の見本', options: 'オプションの見本' }[type];
@@ -427,6 +493,15 @@ function setupInteractions() {
   document.getElementById('consult-button').addEventListener('click', () => openInquiry());
   document.getElementById('addon-consult-button')?.addEventListener('click', () => openInquiry());
   document.getElementById('contact-consult-button')?.addEventListener('click', () => openInquiry());
+  document.addEventListener('click', (event) => {
+    const consult = event.target.closest('[data-rd-consult]');
+    if (!consult) return;
+    const [type, id] = consult.dataset.rdConsult.split(':');
+    const item = appData[type]?.find((entry) => String(entry.id) === String(id));
+    if (!item || (type === 'products' && item.is_sold)) return;
+    document.getElementById('detail-modal')?.close();
+    openInquiry(type === 'products' ? `完成モデル：${item.name}のお迎え` : `モデル紹介：${item.name}について`);
+  });
   document.getElementById('faq-filters')?.addEventListener('click', (event) => {
     const chip = event.target.closest('[data-faq-category]');
     if (!chip) return;

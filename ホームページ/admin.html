@@ -145,6 +145,16 @@
         </div>
       </section>
     </main>
+        <dialog id="detail-editor-dialog" class="detail-editor-dialog">
+      <div class="detail-editor-box">
+        <button type="button" class="detail-editor-close" aria-label="閉じる">×</button>
+        <p class="section-tag">detail page <span>✦</span></p>
+        <h2 id="de-title">詳細ページの内容</h2>
+        <p class="de-lead">公開サイトで、モデルをタップしたときに開く「詳細ページ」の内容です。入力した項目だけが表示されます（空欄の部分は自動で非表示になります）。</p>
+        <div id="de-body"></div>
+        <div class="de-actions"><button type="button" id="de-save" class="button bubble">この内容を保存 <span>→</span></button><span id="de-message" class="form-message"></span></div>
+      </div>
+    </dialog>
     <script src="config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="admin.js"></script>
   </body>
 </html>
