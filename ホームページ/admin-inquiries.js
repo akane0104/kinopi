@@ -1166,6 +1166,8 @@ document.addEventListener('click', async (event) => {
     }
     return;
   }
+  const gotoTabButton = event.target.closest('[data-goto-tab]');
+  if (gotoTabButton) { document.querySelector(`.od-tab[data-tab="${gotoTabButton.dataset.gotoTab}"]`)?.click(); return; }
   const tab = event.target.closest('.od-tab');
   if (tab) {
     document.querySelectorAll('.od-tab').forEach((entry) => entry.classList.toggle('is-active', entry === tab));

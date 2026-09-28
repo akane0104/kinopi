@@ -73,6 +73,7 @@
           </div>
           <nav class="od-tabs">
             <button class="od-tab is-active" data-tab="basic">概要</button>
+            <button class="od-tab" data-tab="content">依頼内容を編集</button>
             <button class="od-tab" data-tab="progress">進捗チェックリスト</button><button class="od-tab" data-tab="process">工程</button><button class="od-tab" data-tab="consult">相談</button>
             <button class="od-tab" data-tab="contract">表情</button>
             <button class="od-tab" data-tab="illustform">依頼票</button>
@@ -99,8 +100,7 @@
                   <label class="dash-field"><span class="dash-field-label">受付日</span><b id="od-created" class="dash-static"></b></label>
                   <label class="dash-check-field"><input id="od-replied" type="checkbox" /><span>返信済みにする</span></label>
                 </div>
-                <label class="dash-field wide">依頼内容<textarea id="od-message" rows="5" class="dash-textarea-lg"></textarea></label>
-                <label class="dash-field wide">ヒアリング内容まとめ<textarea id="od-hearing-summary" rows="8" class="dash-textarea-lg" placeholder="「依頼票」タブの回答内容を参考に、お客様に確認してもらいたい内容をまとめて入力してください"></textarea><small class="od-hint">ここに書いた内容が、お客様の「制作内容のご確認ページ」にそのまま表示されます。</small></label>
+                <button type="button" class="od-mini-button is-ghost" data-goto-tab="content">依頼内容・ヒアリング内容まとめを編集する →</button>
               </div>
 
               <div class="dash-card dash-progress-card">
@@ -166,6 +166,20 @@
                 <textarea id="od-memo" rows="5" placeholder="髪の揺れを強める / 口角を少し上げる / 左目の開きが弱い など"></textarea>
               </div>
 
+            </section>
+            <section id="panel-content" class="od-panel">
+              <div class="content-editor">
+                <label class="content-editor-field">
+                  <span class="content-editor-label">依頼内容</span>
+                  <small class="od-hint">お客様からいただいた依頼のメッセージです。</small>
+                  <textarea id="od-message" class="content-editor-textarea" rows="12"></textarea>
+                </label>
+                <label class="content-editor-field">
+                  <span class="content-editor-label">ヒアリング内容まとめ</span>
+                  <small class="od-hint">「依頼票」タブの回答を見ながら、お客様に確認してもらいたい内容をまとめてください。ここに書いた内容が、お客様の「制作内容のご確認ページ」にそのまま表示されます。</small>
+                  <textarea id="od-hearing-summary" class="content-editor-textarea" rows="16" placeholder="例：&#10;・キャラクター名：りんご（18歳・女性）&#10;・イメージカラー：赤×ピンク&#10;・髪型：ロングのストレート&#10;・その他ご要望：…"></textarea>
+                </label>
+              </div>
             </section>
             <section id="panel-progress" class="od-panel">
               <p class="od-hint">進捗の割合・現在のステージは「概要」タブにまとめて表示されます。ここではチェックリストの詳細を編集できます。</p>
