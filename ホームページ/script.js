@@ -397,35 +397,46 @@ function richDetailHtml(type, item) {
   const esc = escapeAddonHtml;
   const d = item.detail && typeof item.detail === 'object' ? item.detail : {};
   const isProduct = type === 'products';
+  const isWork = type === 'works';
   const index = appData[type].findIndex((entry) => String(entry.id) === String(item.id));
   const media = item.media_url || '';
   const mediaIsVideo = item.media_type === 'video' || isVideoSource(media);
   const cover = item.cover_url || (!mediaIsVideo ? media : '');
   const tags = Array.isArray(d.tags) ? d.tags.filter(Boolean) : [];
   const rawSpecs = (Array.isArray(d.specs) ? d.specs : []).filter((row) => row && row.label && row.value);
-  // 管理画面の「担当したこと」（credit）も、制作内容の表の先頭に自動で載せる（きのぴー。が何をやったかを伝えるため）
-  const specs = (item.credit && String(item.credit).trim() && !rawSpecs.some((row) => row.label === '担当したこと')) ? [{ label: '担当したこと', value: String(item.credit).trim() }, ...rawSpecs] : rawSpecs;
+  // 既存の項目（担当したこと・プラン・可動域・追加オプション）も、制作内容の表の先頭に自動で載せる
+  const autoSpecs = [];
+  if (item.credit && String(item.credit).trim()) autoSpecs.push({ label: '担当したこと', value: String(item.credit).trim() });
+  if (isWork) {
+    if (item.plan) autoSpecs.push({ label: 'プラン', value: item.plan });
+    if (item.motion) autoSpecs.push({ label: '可動域', value: item.motion });
+    if (item.options) autoSpecs.push({ label: '追加オプション', value: item.options });
+  }
+  const specs = [...autoSpecs.filter((row) => !rawSpecs.some((r) => r.label === row.label)), ...rawSpecs];
   const sub = (Array.isArray(d.motion_images) ? d.motion_images : []).filter(Boolean);
   const expressions = (Array.isArray(d.expressions) ? d.expressions : []).filter((row) => row && row.image);
   const points = (Array.isArray(d.points) ? d.points : []).filter((row) => row && (row.title || row.text || row.image));
   const mainMotion = mediaIsVideo ? `<video src="${esc(media)}" controls playsinline preload="metadata"${cover ? ` poster="${esc(cover)}"` : ''}></video>` : (media && media !== cover ? `<img src="${esc(media)}" alt="" />` : '');
   const hasMotion = Boolean(mainMotion) || sub.length > 0;
   const hasRight = hasMotion || expressions.length > 0 || points.length > 0;
-  const name = item.name || item.title || '';
+  const name = item.title || item.name || '';
   const priceText = isProduct ? (item.price === null || item.price === undefined || item.price === '' ? '要お見積り' : yen(item.price)) : '';
   const sold = isProduct && item.is_sold;
 
   const head = isProduct
     ? `<p class="rd-tag">READY TO ADOPT <span>♥</span></p><h2>販売中モデル</h2><p class="rd-sub">すでに完成していて、お迎えできるモデルです。</p>`
+    : isWork
+    ? `<p class="rd-tag">OUR WORKS <span>✎</span></p><h2>制作実績</h2><p class="rd-sub">お客様のご依頼で制作した作品です。</p>`
     : `<p class="rd-tag">MEET THE MODELS <span>★</span></p><h2>モデル紹介</h2><p class="rd-sub">モデルの動きを、動画や画像で見られるギャラリーです。</p>`;
 
   const left = `<div class="rd-card rd-model">
       <div class="rd-cover">${cover ? `<img src="${esc(cover)}" alt="${esc(name)}" />` : '<div class="rd-cover-empty">✦</div>'}${sold ? '<i class="sold-tag">SOLD OUT</i>' : ''}</div>
       <div class="rd-model-copy">
-        <small>${isProduct ? 'READY-MADE' : `MODEL ${String(index + 1).padStart(2, '0')}`}</small>
+        <small>${isProduct ? 'READY-MADE' : isWork ? (item.category || 'WORK') : `MODEL ${String(index + 1).padStart(2, '0')}`}</small>
         <h3>${esc(name)}</h3>
         ${item.subtitle ? `<span class="rd-model-sub">${esc(item.subtitle)}</span>` : ''}
         ${item.staff_name ? `<span class="rd-staff">制作担当：${esc(item.staff_name)}</span>` : ''}
+        ${isWork && item.year ? `<span class="rd-model-sub">${esc(item.year)}</span>` : ''}
         ${isProduct ? `<strong class="rd-price">${priceText}</strong>` : ''}
         ${tags.length ? `<div class="rd-tags">${tags.map((tag) => `<i>${esc(tag)}</i>`).join('')}</div>` : ''}
         ${item.description ? `<p class="rd-desc">${esc(item.description)}</p>` : ''}
@@ -453,7 +464,7 @@ function openDetail(type, id) {
   const item = appData[type].find((entry) => String(entry.id) === String(id));
   if (!item) return;
   const dialog = document.getElementById('detail-modal');
-  const isRich = type === 'models' || type === 'products';
+  const isRich = type === 'models' || type === 'products' || type === 'works';
   dialog.classList.toggle('rich-detail', isRich);
   if (isRich) {
     document.getElementById('modal-body').innerHTML = richDetailHtml(type, item);
@@ -502,7 +513,9 @@ function setupInteractions() {
     const item = appData[type]?.find((entry) => String(entry.id) === String(id));
     if (!item || (type === 'products' && item.is_sold)) return;
     document.getElementById('detail-modal')?.close();
-    openInquiry(type === 'products' ? `完成モデル：${item.name}のお迎え` : `モデル紹介：${item.name}について`);
+    const itemName = item.name || item.title || '';
+    const presets = { products: `完成モデル：${itemName}のお迎え`, models: `モデル紹介：${itemName}について`, works: `制作実績：${itemName}について` };
+    openInquiry(presets[type] || '');
   });
   document.getElementById('faq-filters')?.addEventListener('click', (event) => {
     const chip = event.target.closest('[data-faq-category]');
