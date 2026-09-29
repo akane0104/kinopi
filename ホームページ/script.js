@@ -454,7 +454,7 @@ function richDetailHtml(type, item) {
   const cta = `<div class="rd-cta">
       ${cover ? `<img class="rd-cta-img" src="${esc(cover)}" alt="" />` : ''}
       <span class="rd-cta-bubble">${isProduct ? 'このモデルのお迎えについて、詳しく相談できます♡' : 'このモデルの制作について、詳しく相談できます♡'}</span>
-      <button type="button" class="button bubble rd-cta-button" data-rd-consult="${type}:${item.id}" ${sold ? 'disabled' : ''}>${sold ? '販売済みです' : (isProduct ? 'このモデルをお迎えする' : 'このモデルについて相談する')} <span>${sold ? '' : '→'}</span></button>
+      <button type="button" class="button bubble rd-cta-button" data-rd-consult="${type}:${item.id}" ${sold ? 'disabled' : ''}>${sold ? '販売済みです' : (isProduct ? 'このモデルをお迎えする' : '相談してみる')} <span>${sold ? '' : '→'}</span></button>
     </div>`;
 
   return `<div class="rd-wrap"><header class="rd-head">${head}</header><div class="rd-layout ${hasRight ? '' : 'is-single'}"><div class="rd-left">${left}</div>${hasRight ? `<div class="rd-right">${right}</div>` : ''}</div>${cta}</div>`;
