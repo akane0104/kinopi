@@ -817,3 +817,7 @@ article.inquiry-card.is-attention{background:#fffafc;box-shadow:0 0 0 2px #ffcfe
   .de-row,.de-row-specs,.de-row-expressions,.de-row-motion_images,.de-row-points{grid-template-columns:1fr}
   .de-row-points textarea{grid-column:auto}
 }
+
+/* ===== 追加機能：フォーム内の「詳細ページを編集」ボタン ===== */
+.form-actions-row{grid-column:1/-1;margin-top:6px}
+.form-actions-row .od-mini-button{width:100%;padding:12px 16px;font-size:12px}

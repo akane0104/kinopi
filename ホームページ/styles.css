@@ -537,3 +537,6 @@ footer #footer-x-link{font-weight:700}
   .rd-cta-button{min-width:0;width:100%}
   .rd-bubble{max-width:none}
 }
+
+/* 担当者名の表示 */
+.rd-staff{display:inline-block;margin-top:4px;font-size:11px;font-weight:700;color:#9d70b9}

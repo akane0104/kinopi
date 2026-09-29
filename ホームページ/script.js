@@ -425,6 +425,7 @@ function richDetailHtml(type, item) {
         <small>${isProduct ? 'READY-MADE' : `MODEL ${String(index + 1).padStart(2, '0')}`}</small>
         <h3>${esc(name)}</h3>
         ${item.subtitle ? `<span class="rd-model-sub">${esc(item.subtitle)}</span>` : ''}
+        ${item.staff_name ? `<span class="rd-staff">制作担当：${esc(item.staff_name)}</span>` : ''}
         ${isProduct ? `<strong class="rd-price">${priceText}</strong>` : ''}
         ${tags.length ? `<div class="rd-tags">${tags.map((tag) => `<i>${esc(tag)}</i>`).join('')}</div>` : ''}
         ${item.description ? `<p class="rd-desc">${esc(item.description)}</p>` : ''}

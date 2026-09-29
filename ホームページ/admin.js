@@ -521,6 +521,15 @@ async function saveDetailEditor() {
 document.addEventListener('click', async (event) => {
   const openBtn = event.target.closest('[data-detail-edit]');
   if (openBtn) { openDetailEditor(openBtn.dataset.detailEdit, openBtn.dataset.id); return; }
+  const formOpenBtn = event.target.closest('[data-form-detail-edit]');
+  if (formOpenBtn) {
+    const type = formOpenBtn.dataset.formDetailEdit;
+    const form = formOpenBtn.closest('form');
+    const id = form?.elements.id?.value;
+    if (!id) { alert('先に「保存」を押して登録してから、詳細ページを編集できます。'); return; }
+    openDetailEditor(type, id);
+    return;
+  }
   if (!deState || !event.target.closest('#detail-editor-dialog')) return;
   if (event.target.closest('.detail-editor-close')) { $('#detail-editor-dialog').close(); return; }
   if (event.target.closest('#de-save')) { saveDetailEditor(); return; }
