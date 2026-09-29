@@ -563,6 +563,10 @@ document.addEventListener('change', async (event) => {
     const url = await upload(file, 0, '詳細ページの画像');
     row.querySelector('[data-de-field="image"]').value = url;
     row.querySelector('.de-thumb').innerHTML = `<img src="${deEsc(url)}" alt="" />`;
+    // 保存用データにも反映しておく（この後に行を追加・削除して再描画されても、アップロードした画像が消えないように）
+    const listName = row.dataset.deRow;
+    const rowIndex = [...row.parentElement.children].indexOf(row);
+    if (deState.detail[listName]?.[rowIndex]) deState.detail[listName][rowIndex].image = url;
     message.textContent = 'アップロードしました。忘れずに「保存」を押してください。';
     message.style.color = '#579578';
   } catch (error) {
