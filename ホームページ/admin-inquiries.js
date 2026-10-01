@@ -1238,6 +1238,8 @@ function openDetail(id) {
   markDetailSaved();
   document.querySelectorAll('.od-tab').forEach((tab, index) => tab.classList.toggle('is-active', index === 0));
   document.querySelectorAll('.od-panel').forEach((panel) => panel.classList.remove('is-open'));
+  $('#order-detail').classList.remove('is-expanded');
+  $('#od-expand-toggle').textContent = '⇕ 縦に広げる';
   $('#order-detail').showModal();
   openPanelPopout('basic', '概要');
 }
