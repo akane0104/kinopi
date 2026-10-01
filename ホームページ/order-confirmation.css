@@ -39,6 +39,7 @@
 .oc-total-card{background:linear-gradient(135deg,#fff5f8,#fdf0f6);border:1px solid var(--ireq-border);border-radius:20px;padding:30px 26px;text-align:center}
 .oc-total-label{margin:0 0 6px;font:700 11px var(--fun);letter-spacing:.1em;color:var(--ireq-rose-deep)}
 .oc-total-amount{margin:0 0 22px;font:800 44px var(--fun);color:var(--ireq-ink);letter-spacing:-.02em}
+.oc-coupon-note{margin:-16px 0 20px;font:700 12px var(--round);color:var(--ireq-rose-deep)}
 .oc-total-breakdown{text-align:left;border-top:1px solid var(--ireq-border);padding-top:16px}
 .oc-breakdown-row{display:flex;justify-content:space-between;padding:7px 0;font-size:12px;color:var(--ireq-muted)}
 .oc-breakdown-row b{color:var(--ireq-ink);font-weight:700}

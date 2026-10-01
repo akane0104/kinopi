@@ -267,7 +267,7 @@ async function notifyDiscord(key, serial) {
   if (!url || !enabled) return;
   const forms = await getRequestForms();
   const kindLabel = forms.find((form) => form.key === key)?.label || key;
-  const content = `📋 依頼フォームの回答が届きました\n種類：${kindLabel}\nお客様コード：${serial}\n\n依頼BOXの「依頼票」タブからご確認ください。`;
+  const content = `📋 依頼フォームの回答が届きました\n種類：${kindLabel}\nお客様コード：${serial}\n\n依頼管理の「依頼票」タブからご確認ください。`;
   try {
     await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content }) });
   } catch (error) { /* 通知が失敗しても、回答の送信自体は成功しているので何もしない */ }

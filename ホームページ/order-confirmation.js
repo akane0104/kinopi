@@ -2,7 +2,7 @@ const configured = Boolean(window.PINOKII_SUPABASE?.url && window.PINOKII_SUPABA
 const db = configured && window.supabase ? window.supabase.createClient(window.PINOKII_SUPABASE.url, window.PINOKII_SUPABASE.anonKey) : null;
 const $ = (selector) => document.querySelector(selector);
 
-// 依頼BOX（admin-inquiries.js）の STATUS と同じラベルを使用（表示のみ、値は変更しない）
+// 依頼管理（admin-inquiries.js）の STATUS と同じラベルを使用（表示のみ、値は変更しない）
 const STATUS_LABELS = {
   received: '受付',
   prep: '制作準備',
@@ -41,6 +41,13 @@ function fmtDate(value) {
 
 let currentSerial = '';
 let currentData = null;
+let couponSettings = {};
+
+async function loadCouponSettings() {
+  if (!db) return;
+  const { data } = await db.from('site_settings').select('key,value').in('key', ['coupon_enabled', 'coupon_percent']);
+  couponSettings = Object.fromEntries((data || []).map((row) => [row.key, row.value]));
+}
 
 function hideAllSteps() {
   ['oc-code-step', 'oc-pending-step', 'oc-agreed-step', 'oc-main-step', 'oc-done-step'].forEach((id) => { $(`#${id}`).hidden = true; });
@@ -78,6 +85,7 @@ async function handleCodeSubmit(event) {
     return;
   }
 
+  await loadCouponSettings();
   renderMain(data);
   hideAllSteps();
   $('#oc-main-step').hidden = false;
@@ -86,7 +94,7 @@ async function handleCodeSubmit(event) {
 
 function renderMain(data) {
   $('#oc-serial-display').textContent = data.serial;
-  $('#oc-name').textContent = data.request_name || '';
+  $('#oc-name').textContent = data.request_name ? `${data.request_name} 様` : '';
   $('#oc-serial-2').textContent = data.serial;
   $('#oc-status').textContent = STATUS_LABELS[data.order_status] || data.order_status || '受付';
 
@@ -122,6 +130,10 @@ function renderMain(data) {
   const extraItems = Array.isArray(data.extra_items) ? data.extra_items : [];
   const total = Number(data.total || 0);
   $('#oc-total-amount').textContent = yen(total);
+  const couponNote = $('#oc-coupon-note');
+  const couponOn = String(couponSettings.coupon_enabled ?? true) !== 'false';
+  const couponPercent = Number(couponSettings.coupon_percent || 0);
+  if (couponNote) { couponNote.hidden = !(couponOn && couponPercent > 0); couponNote.textContent = `${couponPercent}%OFFクーポン使用`; }
   const breakdownRows = [`<div class="oc-breakdown-row"><span>基本料金</span><b>${yen(baseAmount)}</b></div>`];
   extraItems.forEach((extra) => { breakdownRows.push(`<div class="oc-breakdown-row"><span>${escapeHtml(extra.label || '追加料金')}</span><b>${yen(extra.fee)}</b></div>`); });
   breakdownRows.push(`<div class="oc-breakdown-row oc-breakdown-total"><span>合計</span><b>${yen(total)}</b></div>`);
@@ -136,7 +148,6 @@ function renderMain(data) {
     : `${revLimit}回まで無料（現在${revUsed}回使用）。${revLimit}回を超える修正は、内容により追加料金をご案内いたします。`;
   $('#oc-revision').textContent = revisionText;
   $('#oc-due').textContent = fmtDate(data.due_date);
-  $('#oc-payment').textContent = PAYMENT_LABELS[data.payment_status] || '未払い';
 
   // 同意フォームをリセット
   const form = $('#oc-agree-form');
@@ -159,7 +170,7 @@ async function notifyDiscordAgreement(serial, name) {
   const url = map.discord_webhook_url;
   const enabled = String(map.discord_notify_enabled ?? true) !== 'false';
   if (!url || !enabled) return;
-  const content = `✅ 制作内容にご同意いただきました\nお名前：${name}\nお客様コード：${serial}\n\n依頼BOXでご確認ください。`;
+  const content = `✅ 制作内容にご同意いただきました\nお名前：${name}\nお客様コード：${serial}\n\n依頼管理でご確認ください。`;
   try {
     await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content }) });
   } catch (error) { /* 通知が失敗しても同意の記録自体は完了しているので何もしない */ }
