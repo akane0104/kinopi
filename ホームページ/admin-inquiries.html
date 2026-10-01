@@ -78,14 +78,16 @@
                 <button type="button" class="serial-copy-button" id="od-serial-copy" title="コードをコピー">コピー</button>
                 <span id="od-head-created" class="od-head-meta-item"></span>
                 <span id="od-head-contact" class="od-head-meta-item"></span>
+                <span id="od-replied-badge" class="reply-badge reply-badge-inline"></span>
               </div>
-              <div id="od-scope-tags" class="scope-tag-row"></div>
+              <div id="od-scope-tags" class="scope-tag-row scope-tag-row-scroll"></div>
             </div>
             <div class="od-head-right">
-              <span id="od-replied-badge" class="reply-badge"></span>
-              <span id="od-head-ds" class="ds-badge ds-badge-lg"></span>
+              <div class="od-head-status-row">
+                <span id="od-head-ds" class="ds-badge ds-badge-lg"></span>
+                <select id="od-status" class="od-status-select"></select>
+              </div>
               <p class="od-head-waiting" id="od-head-waiting"></p>
-              <select id="od-status" class="od-status-select"></select>
             </div>
           </div>
 
@@ -165,11 +167,11 @@
                   <div class="dash-highlight dash-highlight-money">
                     <span class="dash-highlight-label">お支払い金額</span>
                     <strong id="od-total">¥0</strong>
+                    <p class="dash-payment-method-row">お支払い方法：<span id="od-payment-method" class="payment-method-badge">未選択</span></p>
                     <div class="dash-money-sub">
                       <select id="od-payment" class="filter-select"></select>
                       <input id="od-paid-amount" type="number" min="0" placeholder="支払額" />
                       <input id="od-paid-date" type="date" />
-                      <span id="od-payment-method" class="payment-method-badge" hidden></span>
                     </div>
                   </div>
                   <div class="dash-highlight dash-highlight-due">

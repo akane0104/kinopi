@@ -1046,6 +1046,8 @@ function renderDetailSummary(item) {
 
   // 「次にやること」カード
   const next = NEXT_ACTION[ds.key] || NEXT_ACTION.hearing;
+  const nextActionCard = $('#od-next-action');
+  if (nextActionCard) nextActionCard.className = `od-next-action ${ds.cls}`;
   const nextBadge = $('#od-next-action-badge');
   if (nextBadge) { nextBadge.className = `od-next-action-badge ${ds.cls}`; nextBadge.innerHTML = `<i>${ds.mark}</i>${ds.label}`; }
   const nextText = $('#od-next-action-text');
@@ -1214,9 +1216,10 @@ function openDetail(id) {
   const paymentMethodLabels = { bank: '💳 銀行振込希望', paypay: '📱 PayPay希望' };
   if (item.payment_method && paymentMethodLabels[item.payment_method]) {
     paymentMethodBadge.textContent = paymentMethodLabels[item.payment_method];
-    paymentMethodBadge.hidden = false;
+    paymentMethodBadge.classList.remove('is-unselected');
   } else {
-    paymentMethodBadge.hidden = true;
+    paymentMethodBadge.textContent = '未選択（お客様がまだ選んでいません）';
+    paymentMethodBadge.classList.add('is-unselected');
   }
   $('#od-paid-amount').value = Number(item.paid_amount || 0);
   $('#od-paid-date').value = item.paid_date ? String(item.paid_date).slice(0, 10) : '';

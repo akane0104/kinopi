@@ -711,17 +711,17 @@
 .inquiry-admin-bar .filter-select{width:100%;min-width:0;flex:none;padding:10px 14px;font-size:11px}
 
 /* ---- ステータスバッジ（色＋文字＋記号） ---- */
-.ds-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:99px;font:800 12px var(--round);white-space:nowrap}
+.ds-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:99px;font:800 12px var(--round);white-space:nowrap;background:#fff;border:2px solid transparent}
 .ds-badge i{font-style:normal;font-size:10px}
-.ds-unreplied{background:#ffe0ea;color:#c1306b}
-.ds-hearing{background:var(--lav);color:var(--purple)}
-.ds-pricewait{background:#fff3d6;color:#8a6417}
-.ds-agreewait{background:#ffe9db;color:#c4581f}
-.ds-agreed{background:#dcf5e3;color:#2f8f6b}
-.ds-working{background:#ffe1ec;color:var(--hot)}
-.ds-reviewing{background:#e5f0ff;color:#4d6fb0}
-.ds-delivered{background:#d2efdc;color:#2c8a55}
-.ds-cancelled{background:#eee9ef;color:#8d8593}
+.ds-unreplied{border-color:#e8488a;color:#c1306b}
+.ds-hearing{border-color:#a98bd6;color:var(--purple)}
+.ds-pricewait{border-color:#d4a72c;color:#8a6417}
+.ds-agreewait{border-color:#e8793a;color:#c4581f}
+.ds-agreed{border-color:#2f8f6b;color:#2f8f6b}
+.ds-working{border-color:var(--hot);color:var(--hot)}
+.ds-reviewing{border-color:#4d6fb0;color:#4d6fb0}
+.ds-delivered{border-color:#2c8a55;color:#2c8a55}
+.ds-cancelled{border-color:#8d8593;color:#8d8593}
 
 /* ---- 依頼カード（コンパクト） ---- */
 article.inquiry-card{padding:20px 22px}
@@ -832,16 +832,30 @@ article.inquiry-card.is-attention{background:#fffafc;box-shadow:0 0 0 2px #ffcfe
 .od-close{position:absolute;top:14px;right:14px;z-index:5}
 
 /* ---- 常に見えるヘッダー ---- */
-.od-head-v2{padding-right:44px}
-.od-head-name{margin:0 0 6px;font-size:22px;letter-spacing:-.03em;line-height:1.3;color:var(--ink)}
-.od-head-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}
-.od-head-meta-item{font:700 11px var(--round);color:var(--muted)}
-.od-head-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:200px}
-.ds-badge-lg{padding:9px 18px;font-size:13px}
-.od-head-waiting{margin:0;max-width:260px;text-align:right;font-size:11px;line-height:1.7;color:var(--muted)}
+.od-head-v2{padding-right:40px}
+.od-head-name{margin:0 0 4px;font-size:19px;letter-spacing:-.03em;line-height:1.25;color:var(--ink)}
+.od-head-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-bottom:4px}
+.od-head-meta-item{font:700 10px var(--round);color:var(--muted)}
+.reply-badge-inline{padding:3px 10px;font-size:9px}
+.scope-tag-row-scroll{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+.scope-tag-row-scroll .scope-tag{flex:0 0 auto}
+.od-head-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:0 0 auto}
+.od-head-status-row{display:flex;align-items:center;gap:8px}
+.ds-badge-lg{padding:7px 14px;font-size:12px}
+.od-status-select{padding:6px 12px;font-size:10px}
+.od-head-waiting{margin:0;max-width:240px;text-align:right;font-size:10px;line-height:1.6;color:var(--muted)}
 
 /* ---- 次にやることカード ---- */
-.od-next-action{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-bottom:16px;padding:14px 18px;border-radius:18px;background:linear-gradient(135deg,#fff3f8,#f7f0ff);border:1.5px solid #f6d2e3}
+.od-next-action{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-bottom:16px;padding:12px 16px;border-radius:18px;background:#fffdfa;border:2.5px solid #f6d2e3;transition:border-color .2s}
+.od-next-action.ds-unreplied{border-color:#e8488a}
+.od-next-action.ds-hearing{border-color:#a98bd6}
+.od-next-action.ds-pricewait{border-color:#d4a72c}
+.od-next-action.ds-agreewait{border-color:#e8793a}
+.od-next-action.ds-agreed{border-color:#2f8f6b}
+.od-next-action.ds-working{border-color:var(--hot)}
+.od-next-action.ds-reviewing{border-color:#4d6fb0}
+.od-next-action.ds-delivered{border-color:#2c8a55}
+.od-next-action.ds-cancelled{border-color:#8d8593}
 .od-next-action-label{font:800 10px var(--round);letter-spacing:.06em;color:var(--purple)}
 .od-next-action-text{margin:0;flex:1 1 220px;font-size:13px;font-weight:700;color:var(--ink)}
 .od-next-action-button{white-space:nowrap}
@@ -866,8 +880,12 @@ article.inquiry-card.is-attention{background:#fffafc;box-shadow:0 0 0 2px #ffcfe
   .od-head-v2{padding-right:40px}
   .od-head{flex-direction:column;align-items:stretch}
   .od-head-right{align-items:flex-start;width:100%}
+  .od-head-status-row{width:100%;justify-content:space-between}
   .od-head-waiting{text-align:left;max-width:none}
-  .od-next-action{padding:12px 14px}
+  .od-next-action{padding:10px 14px}
   .od-dirty-indicator{margin-right:0;width:100%;text-align:center}
   .od-foot{flex-wrap:wrap}
 }
+
+.dash-payment-method-row{margin:4px 0 0;font-size:11px;color:var(--muted);font-weight:700}
+.payment-method-badge.is-unselected{background:#f1eef2;color:#a89aa3}
