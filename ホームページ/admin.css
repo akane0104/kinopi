@@ -893,3 +893,19 @@ article.inquiry-card.is-attention{background:#fffafc;box-shadow:0 0 0 2px #ffcfe
 
 /* 右下のつまみでドラッグして、幅・高さを自由に調整できます（対応ブラウザのみ） */
 #order-detail::-webkit-resizer{background-color:transparent;background-image:radial-gradient(circle,var(--hot) 1.5px,transparent 1.5px);background-size:4px 4px;background-position:bottom right;padding:3px}
+
+/* ============================================================
+   タブの中身を別画面（ポップアップ）で開く機能
+   ============================================================ */
+#panel-popout{border:0;padding:0;background:transparent;width:min(1200px,96vw);height:92vh;height:92dvh;max-width:none;max-height:none;overscroll-behavior:contain;resize:both;overflow:hidden;min-width:480px;min-height:320px}
+#panel-popout::backdrop{background:rgba(76,49,69,.45)}
+#panel-popout::-webkit-resizer{background-color:transparent;background-image:radial-gradient(circle,var(--hot) 1.5px,transparent 1.5px);background-size:4px 4px;background-position:bottom right;padding:3px}
+.od-popout-box{width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;border-radius:24px;background:#fffdfa;padding:26px 32px;box-shadow:0 14px 40px rgba(120,65,100,.3)}
+.od-popout-mount{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;max-width:1000px;margin:0 auto;width:100%}
+.od-popout-title{margin:0 0 14px;padding-right:40px;font-size:20px;letter-spacing:-.02em;color:var(--ink)}
+.od-popout-mount .od-panel{display:block!important;padding-top:0}
+
+@media(max-width:700px){
+  #panel-popout{width:98vw;height:94vh;height:94dvh}
+  .od-popout-box{padding:18px 16px}
+}

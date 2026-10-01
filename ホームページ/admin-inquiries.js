@@ -1183,6 +1183,7 @@ function renderFileList(item) {
 }
 
 function openDetail(id) {
+  closePanelPopout();
   const item = inquiries.find((entry) => String(entry.id) === String(id));
   if (!item) return;
   detailId = item.id;
@@ -1298,9 +1299,47 @@ async function uploadOrderFile() {
 /* ===== 追加機能：詳細画面の未保存インジケーター ===== */
 ['input', 'change'].forEach((evt) => {
   document.addEventListener(evt, (event) => {
-    if (event.target.closest('#order-detail')) markDetailDirty();
+    if (event.target.closest('.od-tracked')) markDetailDirty();
   });
 });
+/* ===== 追加機能：タブの中身を別画面（ポップアップ）で開く ===== */
+let popoutOriginalPanel = null;
+
+function openPanelPopout(tabKey, title) {
+  const panel = document.getElementById(`panel-${tabKey}`);
+  const mount = document.getElementById('panel-popout-mount');
+  const dialog = document.getElementById('panel-popout');
+  if (!panel || !mount || !dialog) return;
+  popoutOriginalPanel = panel;
+  panel.classList.add('is-open');
+  mount.innerHTML = '';
+  const heading = document.createElement('h2');
+  heading.className = 'od-popout-title';
+  heading.textContent = title;
+  mount.appendChild(heading);
+  mount.appendChild(panel);
+  dialog.showModal();
+}
+
+function closePanelPopout() {
+  const dialog = document.getElementById('panel-popout');
+  if (dialog?.open) dialog.close(); // 'close' イベント側で、中身を元の場所へ戻す処理が走ります
+  else if (popoutOriginalPanel) returnPanelHome();
+}
+
+function returnPanelHome() {
+  if (!popoutOriginalPanel) return;
+  const panels = document.querySelector('#order-detail .od-panels');
+  if (panels) panels.appendChild(popoutOriginalPanel);
+  popoutOriginalPanel.classList.remove('is-open');
+  popoutOriginalPanel = null;
+  document.getElementById('panel-basic')?.classList.add('is-open');
+  document.querySelectorAll('.od-tab').forEach((entry) => entry.classList.toggle('is-active', entry.dataset.tab === 'basic'));
+}
+
+document.getElementById('panel-popout')?.addEventListener('close', returnPanelHome);
+document.getElementById('order-detail')?.addEventListener('close', closePanelPopout);
+
 document.addEventListener('click', async (event) => {
   const filterChip = event.target.closest('.filter-chip');
   if (filterChip) {
@@ -1323,10 +1362,20 @@ document.addEventListener('click', async (event) => {
   const tab = event.target.closest('.od-tab');
   if (tab) {
     document.querySelectorAll('.od-tab').forEach((entry) => entry.classList.toggle('is-active', entry === tab));
-    document.querySelectorAll('.od-panel').forEach((panel) => panel.classList.toggle('is-open', panel.id === `panel-${tab.dataset.tab}`));
+    if (tab.dataset.tab === 'basic') {
+      closePanelPopout();
+      document.querySelectorAll('.od-panel').forEach((panel) => panel.classList.toggle('is-open', panel.id === 'panel-basic'));
+    } else {
+      openPanelPopout(tab.dataset.tab, tab.textContent.trim());
+    }
     return;
   }
-  if (event.target.closest('.od-close')) { event.target.closest('dialog')?.close(); return; }
+  if (event.target.closest('.od-close')) {
+    const dialogEl = event.target.closest('dialog');
+    if (dialogEl?.id === 'panel-popout') { closePanelPopout(); return; }
+    dialogEl?.close();
+    return;
+  }
   if (event.target.closest('#od-save')) { saveDetail(); return; }
   if (event.target.closest('#od-catalog-add')) {
     const item = currentDetailItem();
