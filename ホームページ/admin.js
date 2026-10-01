@@ -446,6 +446,14 @@ function deNormalize(detail) {
   };
 }
 
+function deNormalizeLive2d(assets) {
+  const a = assets && typeof assets === 'object' ? assets : {};
+  return {
+    expressions: Array.isArray(a.expressions) ? a.expressions.map((r) => ({ key: r.key || '', label: r.label || r.key || '' })) : [],
+    motions: Array.isArray(a.motions) ? a.motions.map((r) => ({ group: r.group || '', index: r.index ?? 0, label: r.label || r.group || '' })) : []
+  };
+}
+
 function deRowHtml(list, index, row) {
   const imageBlock = (row.image !== undefined) ? `<input data-de-field="image" placeholder="画像URL（右のボタンでアップロードすると自動で入ります）" value="${deEsc(row.image)}" /><label class="de-upload">画像を選ぶ<input type="file" accept="image/*" data-de-upload hidden /></label><span class="de-thumb">${row.image ? `<img src="${deEsc(row.image)}" alt="" />` : ''}</span>` : '';
   let fields = '';
@@ -463,7 +471,26 @@ function deRender() {
     ${section('specs', '制作内容の表（きのぴー。が何をやったか）', 'お客様が「こういうのがいいな」と選ぶときの目安になります。「項目」と「内容」の両方が入っている行だけ表示されます。なお、モデルの「編集」に入力した「担当したこと」は、この表の一番上に自動で表示されます。', '行を追加')}
     ${section('motion_images', '動きのサブ画像', '「実際に動かすとこんな感じ！」の横に並ぶ小さな画像です（2枚くらいがおすすめ）。大きな動画・画像は、モデルの「編集」で登録した詳細画像・動画が使われます。', '画像を追加')}
     ${section('expressions', '表情の変化（小さな写真を5枚くらい）', '表情の写真とラベルを、小さく並べて表示します。写真を入れた表情だけが表示されます（空欄の行は表示されません）。6枚以上にしたい場合は「表情を追加」を押してください。', '表情を追加')}
-    ${section('points', 'こだわりポイント', '画像・タイトル・説明を1セットにして、番号つきで表示します。', 'ポイントを追加')}`;
+    ${section('points', 'こだわりポイント', '画像・タイトル・説明を1セットにして、番号つきで表示します。', 'ポイントを追加')}
+    ${deState.type === 'models' ? deLive2dSectionHtml() : ''}`;
+}
+
+function deLive2dSectionHtml() {
+  const assets = deState.live2dAssets;
+  const hasModel = Boolean(deState.live2dModelUrl);
+  const rows = (list, placeholder) => assets[list].map((row, i) => `<div class="de-row de-row-live2d" data-de-live2d-row="${list}"><input value="${deEsc(row.label)}" data-de-live2d-field="label" placeholder="${placeholder}" /><span class="de-live2d-key">${deEsc(row.key || row.group)}</span></div>`).join('');
+  return `<section class="de-section de-live2d-section">
+    <h3>🎐 Live2Dモデル（体験版・ホームページで実際に動かせます）</h3>
+    <p class="de-hint">Live2D Cubismで書き出した、モデルのフォルダ一式（.model3.json・テクスチャ画像・物理演算ファイルなどが入ったフォルダ）をまとめて選んでください。カーソルで動く・表情ボタンで変化する、体験版として表示されます。</p>
+    ${hasModel ? `<p class="de-live2d-status">✓ 設定済み：<code>${deEsc(deState.live2dModelUrl.split('/').pop())}</code> <button type="button" id="de-live2d-remove" class="od-mini-button is-danger">削除する</button></p>` : '<p class="de-live2d-status is-empty">まだ設定されていません</p>'}
+    <label class="de-upload de-live2d-upload">フォルダを選ぶ<input type="file" id="de-live2d-folder" webkitdirectory multiple hidden /></label>
+    <p id="de-live2d-progress" class="de-hint"></p>
+    ${assets.expressions.length || assets.motions.length ? `
+      <div class="de-live2d-lists">
+        ${assets.expressions.length ? `<div><b>表情ボタンの表示名</b>${rows('expressions', '例：笑顔')}</div>` : ''}
+        ${assets.motions.length ? `<div><b>モーションボタンの表示名</b>${rows('motions', '例：うなずく')}</div>` : ''}
+      </div>` : ''}
+  </section>`;
 }
 
 function deSync() {
@@ -477,6 +504,12 @@ function deSync() {
       return out;
     });
   });
+  if (deState.type === 'models' && deState.live2dAssets) {
+    ['expressions', 'motions'].forEach((list) => {
+      const rows = [...document.querySelectorAll(`#de-body [data-de-live2d-row="${list}"]`)];
+      rows.forEach((row, i) => { if (deState.live2dAssets[list][i]) deState.live2dAssets[list][i].label = row.querySelector('[data-de-live2d-field="label"]')?.value || ''; });
+    });
+  }
 }
 
 function deClean() {
@@ -496,6 +529,10 @@ function openDetailEditor(type, id) {
   const item = (data[type] || []).find((entry) => String(entry.id) === String(id));
   if (!item) return;
   deState = { type, id: item.id, detail: deNormalize(item.detail) };
+  if (type === 'models') {
+    deState.live2dModelUrl = item.live2d_model_url || '';
+    deState.live2dAssets = deNormalizeLive2d(item.live2d_assets);
+  }
   $('#de-title').textContent = `「${item.name || item.title}」の詳細ページ`;
   $('#de-message').textContent = '';
   deRender();
@@ -507,13 +544,23 @@ async function saveDetailEditor() {
   const message = $('#de-message');
   message.style.color = '#c14978';
   message.textContent = '保存中…';
-  const { error } = await db.from(deState.type).update({ detail: deClean() }).eq('id', deState.id);
+  const payload = { detail: deClean() };
+  if (deState.type === 'models') {
+    payload.live2d_model_url = deState.live2dModelUrl || null;
+    payload.live2d_assets = (deState.live2dAssets.expressions.length || deState.live2dAssets.motions.length) ? deState.live2dAssets : null;
+  }
+  let { error } = await db.from(deState.type).update(payload).eq('id', deState.id);
+  if (error && /live2d/.test(error.message)) {
+    const { live2d_model_url, live2d_assets, ...withoutLive2d } = payload;
+    ({ error } = await db.from(deState.type).update(withoutLive2d).eq('id', deState.id));
+    if (!error) message.textContent = '詳細ページは保存しました（Live2D部分は supabase/live2d-model.sql を実行後に保存できます）。';
+  }
   if (error) {
-    message.textContent = /detail/.test(error.message) ? '保存できませんでした：supabase/model-detail.sql をSupabaseのSQL Editorで実行してください。' : `保存できませんでした：${error.message}`;
+    if (!message.textContent.includes('Live2D部分')) message.textContent = /detail/.test(error.message) ? '保存できませんでした：supabase/model-detail.sql をSupabaseのSQL Editorで実行してください。' : `保存できませんでした：${error.message}`;
     return;
   }
+  if (!message.textContent.includes('Live2D部分')) message.textContent = '保存しました！';
   message.style.color = '#579578';
-  message.textContent = '保存しました！';
   showToast('詳細ページを保存しました！');
   await loadAll();
 }
@@ -574,6 +621,62 @@ document.addEventListener('change', async (event) => {
     message.textContent = `アップロードできませんでした：${error.message}`;
   }
   event.target.value = '';
+});
+
+document.addEventListener('change', async (event) => {
+  if (!deState || event.target.id !== 'de-live2d-folder') return;
+  const files = [...event.target.files];
+  const message = $('#de-message');
+  const progress = $('#de-live2d-progress');
+  if (!files.length) return;
+  const modelFile = files.find((file) => file.name.endsWith('.model3.json'));
+  if (!modelFile) {
+    message.style.color = '#c14978';
+    message.textContent = 'フォルダの中に ***.model3.json が見つかりませんでした。Live2D Cubismから書き出したフォルダ一式を選んでください。';
+    event.target.value = '';
+    return;
+  }
+  message.style.color = '#c14978';
+  message.textContent = 'アップロード中…';
+  try {
+    const folderStamp = `${deState.id}-${Date.now()}`;
+    let modelFileUrl = '';
+    for (let i = 0; i < files.length; i += 1) {
+      const file = files[i];
+      progress.textContent = `アップロード中…（${i + 1}/${files.length}）${file.webkitRelativePath || file.name}`;
+      const relPath = (file.webkitRelativePath || file.name).split('/').slice(1).join('/') || file.name; // 選んだ親フォルダ名は除く
+      const safePath = relPath.replace(/[^a-zA-Z0-9._\-/]/g, '-');
+      const storagePath = `live2d/${folderStamp}/${safePath}`;
+      const { error: uploadError } = await db.storage.from('portfolio-media').upload(storagePath, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      const url = db.storage.from('portfolio-media').getPublicUrl(storagePath).data.publicUrl;
+      if (file === modelFile) modelFileUrl = url;
+    }
+    progress.textContent = 'モデルの設定ファイルを読み込み中…';
+    const modelJson = await (await fetch(modelFileUrl)).json();
+    const expressions = (modelJson.FileReferences?.Expressions || []).map((exp) => ({ key: exp.Name, label: exp.Name }));
+    const motionGroups = modelJson.FileReferences?.Motions || {};
+    const motions = Object.entries(motionGroups).flatMap(([group, list]) => (list || []).map((_, index) => ({ group, index, label: list.length > 1 ? `${group} ${index + 1}` : group })));
+    deState.live2dModelUrl = modelFileUrl;
+    deState.live2dAssets = { expressions, motions };
+    progress.textContent = '';
+    message.style.color = '#579578';
+    message.textContent = `アップロードしました（表情${expressions.length}個・モーション${motions.length}個を見つけました）。忘れずに「保存」を押してください。`;
+    deRender();
+  } catch (error) {
+    progress.textContent = '';
+    message.style.color = '#c14978';
+    message.textContent = `アップロードできませんでした：${error.message}`;
+  }
+  event.target.value = '';
+});
+
+document.addEventListener('click', (event) => {
+  if (!deState || event.target.id !== 'de-live2d-remove') return;
+  if (!confirm('設定済みのLive2Dモデルを削除します。よろしいですか？（保存するまでは確定しません）')) return;
+  deState.live2dModelUrl = '';
+  deState.live2dAssets = { expressions: [], motions: [] };
+  deRender();
 });
 
 /* ===== 追加機能：サイドナビのハイライト＆折りたたみを開いてからジャンプ ===== */

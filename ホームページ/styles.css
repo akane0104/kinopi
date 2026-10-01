@@ -540,3 +540,17 @@ footer #footer-x-link{font-weight:700}
 
 /* 担当者名の表示 */
 .rd-staff{display:inline-block;margin-top:4px;font-size:11px;font-weight:700;color:#9d70b9}
+
+/* ============================================================
+   モデル紹介：Live2Dインタラクティブ体験版（体験版・まだ試験導入中）
+   ============================================================ */
+.rd-live2d-stage{position:relative;width:100%;aspect-ratio:4/5;max-height:460px;border-radius:16px;overflow:hidden;background:radial-gradient(circle at 50% 30%,#fff 0%,#fde6ee 100%)}
+.rd-live2d-canvas{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+.rd-live2d-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;margin:0;font:700 12px var(--round);color:var(--hot);background:rgba(255,255,255,.6)}
+.rd-live2d-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.rd-live2d-btn{border:1.5px solid var(--ireq-rose,#d98299);background:#fff;color:var(--hot);padding:8px 16px;border-radius:99px;font:700 12px var(--round);cursor:pointer;transition:background .15s,transform .12s}
+.rd-live2d-btn:hover{background:#fff1f6;transform:translateY(-1px)}
+
+@media(max-width:560px){
+  .rd-live2d-stage{aspect-ratio:3/4;max-height:380px}
+}

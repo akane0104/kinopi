@@ -418,7 +418,11 @@ function richDetailHtml(type, item) {
   const points = (Array.isArray(d.points) ? d.points : []).filter((row) => row && (row.title || row.text || row.image));
   const mainMotion = mediaIsVideo ? `<video src="${esc(media)}" controls playsinline preload="metadata"${cover ? ` poster="${esc(cover)}"` : ''}></video>` : (media && media !== cover ? `<img src="${esc(media)}" alt="" />` : '');
   const hasMotion = Boolean(mainMotion) || sub.length > 0;
-  const hasRight = hasMotion || expressions.length > 0 || points.length > 0;
+  const live2dUrl = (!isProduct && !isWork && item.live2d_model_url) ? item.live2d_model_url : '';
+  const live2dAssets = item.live2d_assets && typeof item.live2d_assets === 'object' ? item.live2d_assets : {};
+  const live2dExpressions = Array.isArray(live2dAssets.expressions) ? live2dAssets.expressions : [];
+  const live2dMotions = Array.isArray(live2dAssets.motions) ? live2dAssets.motions : [];
+  const hasRight = hasMotion || Boolean(live2dUrl) || expressions.length > 0 || points.length > 0;
   const name = item.title || item.name || '';
   const priceText = isProduct ? (item.price === null || item.price === undefined || item.price === '' ? '要お見積り' : yen(item.price)) : '';
   const sold = isProduct && item.is_sold;
@@ -444,7 +448,15 @@ function richDetailHtml(type, item) {
     </div>
     ${specs.length ? `<div class="rd-card rd-specs"><p class="rd-label">WORK DETAILS</p><h4>制作内容</h4><dl>${specs.map((row) => `<div><dt><i>${RD_SPEC_ICONS[row.label] || '✦'}</i>${esc(row.label)}</dt><dd>${esc(row.value)}</dd></div>`).join('')}</dl></div>` : ''}`;
 
-  const right = `${hasMotion ? `<div class="rd-card rd-motion">
+  const live2dButtonsHtml = (live2dExpressions.length || live2dMotions.length) ? `<div class="rd-live2d-buttons">
+      ${live2dExpressions.map((exp) => `<button type="button" class="rd-live2d-btn" data-live2d-expression="${esc(exp.key)}">${esc(exp.label || exp.key)}</button>`).join('')}
+      ${live2dMotions.map((mo) => `<button type="button" class="rd-live2d-btn" data-live2d-motion="${esc(mo.group)}:${Number(mo.index) || 0}">${esc(mo.label || mo.group)}</button>`).join('')}
+    </div>` : '';
+  const right = `${live2dUrl ? `<div class="rd-card rd-motion rd-live2d-card">
+      <div class="rd-motion-head"><div><p class="rd-label">LIVE2D MOTION</p><h4>実際に動かすとこんな感じ！</h4></div><span class="rd-bubble">カーソルを動かしたり、下のボタンを押したりして、実際に動かしてみてください！</span></div>
+      <div class="rd-live2d-stage"><canvas class="rd-live2d-canvas" data-live2d-url="${esc(live2dUrl)}"></canvas><p class="rd-live2d-loading">読み込み中…</p></div>
+      ${live2dButtonsHtml}
+    </div>` : hasMotion ? `<div class="rd-card rd-motion">
       <div class="rd-motion-head"><div><p class="rd-label">LIVE2D MOTION</p><h4>実際に動かすとこんな感じ！</h4></div><span class="rd-bubble">表情の変化や髪・衣装の揺れなど、実際のモデルの動きをご覧いただけます！</span></div>
       <div class="rd-motion-body ${sub.length && mainMotion ? 'has-sub' : ''}">${mainMotion ? `<div class="rd-motion-main">${mainMotion}</div>` : ''}${sub.length ? `<div class="rd-motion-sub">${sub.map((url) => `<img src="${esc(url)}" alt="" />`).join('')}</div>` : ''}</div>
     </div>` : ''}
@@ -460,6 +472,74 @@ function richDetailHtml(type, item) {
   return `<div class="rd-wrap"><header class="rd-head">${head}</header><div class="rd-layout ${hasRight ? '' : 'is-single'}"><div class="rd-left">${left}</div>${hasRight ? `<div class="rd-right">${right}</div>` : ''}</div>${cta}</div>`;
 }
 
+/* ===== 追加機能：モデル紹介のLive2D体験版（ライブラリは実際に開いたときだけ読み込む） ===== */
+let live2dLibsPromise = null;
+let currentLive2dApp = null;
+
+function loadScriptOnce(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error(`ライブラリを読み込めませんでした（${src}）`));
+    document.head.appendChild(script);
+  });
+}
+
+function loadLive2dLibraries() {
+  if (!live2dLibsPromise) {
+    live2dLibsPromise = (async () => {
+      if (!window.PIXI) await loadScriptOnce('https://cdn.jsdelivr.net/npm/pixi.js@6.5.10/dist/browser/pixi.min.js');
+      if (!window.Live2DCubismCore) await loadScriptOnce('https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js');
+      if (!window.PIXI?.live2d) await loadScriptOnce('https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/cubism4.min.js');
+    })();
+  }
+  return live2dLibsPromise;
+}
+
+function destroyLive2dApp() {
+  if (!currentLive2dApp) return;
+  try { currentLive2dApp.destroy(true, { children: true, texture: true, baseTexture: true }); } catch (error) { /* 何もしない */ }
+  currentLive2dApp = null;
+}
+
+async function initLive2dCanvas(canvas) {
+  const url = canvas.dataset.live2dUrl;
+  const stageEl = canvas.closest('.rd-live2d-stage');
+  const loadingEl = stageEl?.querySelector('.rd-live2d-loading');
+  const cardEl = canvas.closest('.rd-live2d-card');
+  destroyLive2dApp();
+  try {
+    await loadLive2dLibraries();
+    if (!canvas.isConnected) return; // モーダルが先に閉じられていたら何もしない
+    const width = stageEl?.clientWidth || 360;
+    const height = stageEl?.clientHeight || 420;
+    canvas.width = width;
+    canvas.height = height;
+    const app = new PIXI.Application({ view: canvas, width, height, backgroundAlpha: 0, autoStart: true });
+    currentLive2dApp = app;
+    const model = await PIXI.live2d.Live2DModel.from(url);
+    app.stage.addChild(model);
+    const fitScale = Math.min(width / model.width, height / model.height) * 0.92;
+    model.scale.set(fitScale);
+    model.anchor.set(0.5, 0.5);
+    model.x = width / 2;
+    model.y = height / 2;
+    canvas.addEventListener('pointermove', (event) => {
+      const rect = canvas.getBoundingClientRect();
+      model.focus(event.clientX - rect.left, event.clientY - rect.top);
+    });
+    if (loadingEl) loadingEl.hidden = true;
+    cardEl?.querySelectorAll('[data-live2d-expression]').forEach((btn) => btn.addEventListener('click', () => model.expression(btn.dataset.live2dExpression)));
+    cardEl?.querySelectorAll('[data-live2d-motion]').forEach((btn) => btn.addEventListener('click', () => {
+      const [group, index] = btn.dataset.live2dMotion.split(':');
+      model.motion(group, Number(index));
+    }));
+  } catch (error) {
+    if (loadingEl) { loadingEl.hidden = false; loadingEl.textContent = 'Live2Dモデルを読み込めませんでした。'; }
+  }
+}
+
 function openDetail(type, id) {
   const item = appData[type].find((entry) => String(entry.id) === String(id));
   if (!item) return;
@@ -470,6 +550,8 @@ function openDetail(type, id) {
     document.getElementById('modal-body').innerHTML = richDetailHtml(type, item);
     dialog.showModal();
     dialog.scrollTop = 0;
+    const canvas = document.querySelector('.rd-live2d-canvas');
+    if (canvas) initLive2dCanvas(canvas);
     return;
   }
   const media = item.media_url || item.cover_url;
@@ -527,6 +609,7 @@ function setupInteractions() {
   document.getElementById('contact-method').addEventListener('change', updateContactFields);
   document.addEventListener('click', (event) => { const buy = event.target.closest('[data-buy]'); if (buy) { const product = appData.products.find((entry) => String(entry.id) === String(buy.dataset.buy)); if (product && !product.is_sold) openInquiry(`完成モデル：${product.name}のお迎え`); return; } const button = event.target.closest('[data-detail]'); if (button) { event.preventDefault(); event.stopPropagation(); openDetail(button.dataset.detail, button.dataset.id); return; } if (event.target.closest('.modal-close') || event.target.closest('[data-close-inquiry]')) event.target.closest('dialog')?.close(); });
   ['detail-modal', 'inquiry-modal'].forEach((id) => document.getElementById(id).addEventListener('click', (event) => { if (event.target.id === id) event.currentTarget.close(); }));
+  document.getElementById('detail-modal')?.addEventListener('close', destroyLive2dApp);
 }
 
 /* ===== 追加機能：ホームで進捗をその場で確認できるミニウィジェット ===== */
