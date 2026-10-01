@@ -395,6 +395,20 @@ let memoTimers = {};
 let editingId = null;
 let deleteTargetId = null;
 let detailId = null;
+let detailDirty = false;
+
+function markDetailDirty() {
+  if (detailDirty) return;
+  detailDirty = true;
+  const el = $('#od-dirty-indicator');
+  if (el) { el.textContent = '未保存の変更があります'; el.classList.remove('is-saved'); el.classList.add('is-dirty'); }
+}
+
+function markDetailSaved() {
+  detailDirty = false;
+  const el = $('#od-dirty-indicator');
+  if (el) { el.textContent = '保存済み'; el.classList.remove('is-dirty'); el.classList.add('is-saved'); }
+}
 
 function showApp(session) {
   $('#setup-message').hidden = true;
@@ -448,6 +462,19 @@ function displayStatusKey(item) {
 }
 
 function displayStatusOf(item) { const key = displayStatusKey(item); return { key, ...DISPLAY_STATUS[key] }; }
+
+// 「次にやること」カード・ヘッダーの短い説明文に使う内容（ステータスごとに自動で切り替わる）
+const NEXT_ACTION = {
+  unreplied: { text: 'お客様へ返信してください。', waiting: '現在、お客様への最初のご返信をお待たせしています。' },
+  hearing: { text: 'ヒアリング内容を確認してください。', waiting: '現在、ヒアリング内容の確認待ちです。' },
+  pricewait: { text: '見積もり内容を確認してください。', waiting: '現在、お見積り内容のご案内をお待たせしています。' },
+  agreewait: { text: 'お客様の同意を待っています。', waiting: '現在、お客様に料金・制作内容の確認と同意をお願いしています。', link: 'order-confirmation.html' },
+  agreed: { text: 'お支払い・制作準備を進めてください。', waiting: '内容にご同意いただきました。制作準備を進めましょう。' },
+  working: { text: '制作を進めてください。', waiting: '現在、制作を進めています。' },
+  reviewing: { text: 'お客様からの確認を待っています。', waiting: '現在、お客様からのご確認・修正依頼をお待ちしています。' },
+  delivered: { text: '対応完了です。', waiting: '納品が完了しています。' },
+  cancelled: { text: '対応は不要です。', waiting: 'この依頼はキャンセルされています。' }
+};
 
 // 「今すぐ対応が必要な理由」の一覧（空なら要対応ではない）
 function attentionReasons(item) {
@@ -1007,11 +1034,37 @@ function renderDetailSummary(item) {
   const badge = $('#od-sum-ds');
   badge.className = `ds-badge ${ds.cls}`;
   badge.innerHTML = `<i>${ds.mark}</i>${ds.label}`;
+
+  // 常に見えるヘッダー（名前・シリアル・受付日時・連絡先・大きなステータス）
+  $('#od-name').textContent = item.request_name || '';
+  $('#od-head-created').textContent = `受付：${item.created_date ? new Date(item.created_date).toLocaleString('ja-JP') : '—'}`;
+  $('#od-head-contact').textContent = contactSummary(item);
+  const headDs = $('#od-head-ds');
+  if (headDs) { headDs.className = `ds-badge ds-badge-lg ${ds.cls}`; headDs.innerHTML = `<i>${ds.mark}</i>${ds.label}`; }
+  const waiting = $('#od-head-waiting');
+  if (waiting) waiting.textContent = NEXT_ACTION[ds.key]?.waiting || '';
+
+  // 「次にやること」カード
+  const next = NEXT_ACTION[ds.key] || NEXT_ACTION.hearing;
+  const nextBadge = $('#od-next-action-badge');
+  if (nextBadge) { nextBadge.className = `od-next-action-badge ${ds.cls}`; nextBadge.innerHTML = `<i>${ds.mark}</i>${ds.label}`; }
+  const nextText = $('#od-next-action-text');
+  if (nextText) nextText.textContent = next.text;
+  const nextButton = $('#od-next-action-button');
+  if (nextButton) {
+    if (next.link) { nextButton.href = `${next.link}?serial=${encodeURIComponent(item.serial)}`; nextButton.hidden = false; }
+    else { nextButton.hidden = true; }
+  }
+
+  // ②プラン・料金カードの「合計金額」（お支払い金額と同じ値をここにも表示）
+  const planTotalEcho = $('#od-plan-total-echo');
+  if (planTotalEcho) planTotalEcho.textContent = yen(item.total);
+
   const [cur, curDone] = STEPPER_POSITION[ds.key] || [-1, false];
   $('#od-stepper').innerHTML = STEPPER_STEPS.map((label, i) => {
     const done = cur >= 0 && (i < cur || (i === cur && curDone));
     const current = i === cur && !curDone;
-    return `<li class="${done ? 'is-done' : ''} ${current ? 'is-current' : ''}"><span class="od-step-dot">${done ? '✓' : i + 1}</span><b>${label}</b></li>`;
+    return `<li class="${done ? 'is-done' : ''} ${current ? 'is-current' : ''}"><span class="od-step-dot">${done ? '✓' : i + 1}</span><b>${label}</b>${current ? '<em class="od-step-here">現在ここです</em>' : ''}</li>`;
   }).join('') + (ds.key === 'cancelled' ? '<li class="od-step-cancelled">この依頼はキャンセルされています</li>' : '');
   const statusLink = $('#od-link-status');
   const confirmLink = $('#od-link-confirm');
@@ -1178,6 +1231,7 @@ function openDetail(id) {
   renderFileList(item);
   renderTemplatesPanel(item);
   $('#od-save-message').textContent = '';
+  markDetailSaved();
   document.querySelectorAll('.od-tab').forEach((tab, index) => tab.classList.toggle('is-active', index === 0));
   document.querySelectorAll('.od-panel').forEach((panel, index) => panel.classList.toggle('is-open', index === 0));
   $('#order-detail').showModal();
@@ -1216,6 +1270,7 @@ async function saveDetail() {
   const previousStatus = orderStatusOf(item);
   if (!await refreshItem(item.id, patch)) return;
   if (previousStatus !== status) notifyDiscordStatusChange(item, status);
+  markDetailSaved();
   $('#od-save-message').textContent = missingColumns.size ? '保存しました！（一部の項目はSQL実行後に保存されます）' : '保存しました！';
   $('#od-save-message').style.color = missingColumns.size ? '#d8622f' : '#579578';
   $('#order-detail').close();
@@ -1237,6 +1292,12 @@ async function uploadOrderFile() {
   fileInput.value = '';
 }
 
+/* ===== 追加機能：詳細画面の未保存インジケーター ===== */
+['input', 'change'].forEach((evt) => {
+  document.addEventListener(evt, (event) => {
+    if (event.target.closest('#order-detail')) markDetailDirty();
+  });
+});
 document.addEventListener('click', async (event) => {
   const filterChip = event.target.closest('.filter-chip');
   if (filterChip) {

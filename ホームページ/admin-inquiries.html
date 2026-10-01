@@ -69,24 +69,57 @@
         </div></dialog>
 
         <dialog id="order-detail"><div class="od-box">
-          <div class="od-head">
-            <div class="od-head-left"><span class="serial-tag" id="od-serial"></span><button type="button" class="serial-copy-button" id="od-serial-copy" title="コードをコピー">コピー</button><b id="od-name"></b><div id="od-scope-tags" class="scope-tag-row"></div></div>
-            <div class="od-head-right"><span id="od-replied-badge" class="reply-badge"></span><select id="od-status" class="od-status-select"></select><button class="od-close" aria-label="閉じる">×</button></div>
+          <button class="od-close" aria-label="閉じる">×</button>
+          <div class="od-head od-head-v2">
+            <div class="od-head-left">
+              <h2 class="od-head-name" id="od-name"></h2>
+              <div class="od-head-meta">
+                <span class="serial-tag" id="od-serial"></span>
+                <button type="button" class="serial-copy-button" id="od-serial-copy" title="コードをコピー">コピー</button>
+                <span id="od-head-created" class="od-head-meta-item"></span>
+                <span id="od-head-contact" class="od-head-meta-item"></span>
+              </div>
+              <div id="od-scope-tags" class="scope-tag-row"></div>
+            </div>
+            <div class="od-head-right">
+              <span id="od-replied-badge" class="reply-badge"></span>
+              <span id="od-head-ds" class="ds-badge ds-badge-lg"></span>
+              <p class="od-head-waiting" id="od-head-waiting"></p>
+              <select id="od-status" class="od-status-select"></select>
+            </div>
           </div>
-          <nav class="od-tabs">
-            <button class="od-tab is-active" data-tab="basic">概要</button>
-            <button class="od-tab" data-tab="content">依頼内容を編集</button>
-            <button class="od-tab" data-tab="progress">進捗チェックリスト</button><button class="od-tab" data-tab="process">工程</button><button class="od-tab" data-tab="consult">相談</button>
-            <button class="od-tab" data-tab="contract">表情</button>
-            <button class="od-tab" data-tab="illustform">依頼票</button>
-            <button class="od-tab" data-tab="files">ファイル</button>
-            <button class="od-tab" data-tab="templates">テンプレ文</button>
+
+          <div class="od-next-action" id="od-next-action">
+            <span class="od-next-action-label">次にやること</span>
+            <span class="od-next-action-badge" id="od-next-action-badge"></span>
+            <p class="od-next-action-text" id="od-next-action-text"></p>
+            <a id="od-next-action-button" class="od-mini-button" target="_blank" rel="noopener" hidden>制作内容確認ページを開く →</a>
+          </div>
+
+          <nav class="od-tabs od-tabs-grouped">
+            <div class="od-tab-group"><span class="od-tab-group-label">基本</span>
+              <button class="od-tab is-active" data-tab="basic">概要</button>
+              <button class="od-tab" data-tab="content">依頼内容</button>
+            </div>
+            <div class="od-tab-group"><span class="od-tab-group-label">制作</span>
+              <button class="od-tab" data-tab="process">工程</button>
+              <button class="od-tab" data-tab="progress">進捗チェック</button>
+              <button class="od-tab" data-tab="contract">表情</button>
+            </div>
+            <div class="od-tab-group"><span class="od-tab-group-label">資料</span>
+              <button class="od-tab" data-tab="illustform">依頼票</button>
+              <button class="od-tab" data-tab="files">ファイル</button>
+            </div>
+            <div class="od-tab-group"><span class="od-tab-group-label">連絡</span>
+              <button class="od-tab" data-tab="consult">相談</button>
+              <button class="od-tab" data-tab="templates">テンプレ文</button>
+            </div>
           </nav>
           <div class="od-panels">
             <section id="panel-basic" class="od-panel is-open">
 
               <div class="od-summary" id="od-summary">
-                <div class="od-summary-top">
+                <div class="od-summary-top" hidden>
                   <div class="od-summary-main">
                     <p class="od-summary-cap">① 基本情報</p>
                     <h2 class="od-summary-name" id="od-sum-name"></h2>
@@ -100,11 +133,18 @@
               </div>
 
               <div class="dash-card dash-overview">
-                <h3 class="dash-card-title"><span class="dash-card-icon">📋</span>② プラン ／ ③ 制作内容</h3>
+                <h3 class="dash-card-title"><span class="dash-card-icon">👑</span>② プラン・料金</h3>
                 <div class="dash-grid-3">
                   <label class="dash-field"><span class="dash-field-label">基本プラン</span><input id="od-plan" /></label>
                   <label class="dash-field"><span class="dash-field-label">可動域</span><input id="od-motion" /></label>
-                  <label class="dash-field"><span class="dash-field-label">オプション</span><input id="od-options" /></label>
+                  <label class="dash-field dash-field-readonly"><span class="dash-field-label">合計金額</span><b id="od-plan-total-echo" class="dash-static dash-static-money"></b></label>
+                </div>
+              </div>
+
+              <div class="dash-card dash-content-card">
+                <h3 class="dash-card-title"><span class="dash-card-icon">📋</span>③ 制作内容</h3>
+                <div class="dash-grid-3">
+                  <label class="dash-field"><span class="dash-field-label">追加オプション</span><input id="od-options" /></label>
                 </div>
                 <div class="dash-chip-row">
                   <label class="dash-chip-check"><input id="od-illust-needed" type="checkbox" /><span><span data-illust-label>イラスト制作</span></span></label>
@@ -120,7 +160,7 @@
               </div>
 
               <div class="dash-card dash-progress-card">
-                <h3 class="dash-card-title"><span class="dash-card-icon">🚀</span>② 料金 ／ ④ 納期・修正</h3>
+                <h3 class="dash-card-title"><span class="dash-card-icon">🚀</span>④ 入金・納期・修正</h3>
                 <div class="dash-highlight-row">
                   <div class="dash-highlight dash-highlight-money">
                     <span class="dash-highlight-label">お支払い金額</span>
@@ -233,6 +273,7 @@
             </section>
           </div>
           <footer class="od-foot">
+            <span id="od-dirty-indicator" class="od-dirty-indicator is-saved">保存済み</span>
             <button id="od-save" class="od-save-button">変更を保存 <span>→</span></button>
             <span id="od-save-message" class="form-message"></span>
           </footer>
