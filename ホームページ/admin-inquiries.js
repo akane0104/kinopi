@@ -1237,8 +1237,9 @@ function openDetail(id) {
   $('#od-save-message').textContent = '';
   markDetailSaved();
   document.querySelectorAll('.od-tab').forEach((tab, index) => tab.classList.toggle('is-active', index === 0));
-  document.querySelectorAll('.od-panel').forEach((panel, index) => panel.classList.toggle('is-open', index === 0));
+  document.querySelectorAll('.od-panel').forEach((panel) => panel.classList.remove('is-open'));
   $('#order-detail').showModal();
+  openPanelPopout('basic', '概要');
 }
 
 async function saveDetail() {
@@ -1333,8 +1334,6 @@ function returnPanelHome() {
   if (panels) panels.appendChild(popoutOriginalPanel);
   popoutOriginalPanel.classList.remove('is-open');
   popoutOriginalPanel = null;
-  document.getElementById('panel-basic')?.classList.add('is-open');
-  document.querySelectorAll('.od-tab').forEach((entry) => entry.classList.toggle('is-active', entry.dataset.tab === 'basic'));
 }
 
 document.getElementById('panel-popout')?.addEventListener('close', returnPanelHome);
@@ -1362,12 +1361,7 @@ document.addEventListener('click', async (event) => {
   const tab = event.target.closest('.od-tab');
   if (tab) {
     document.querySelectorAll('.od-tab').forEach((entry) => entry.classList.toggle('is-active', entry === tab));
-    if (tab.dataset.tab === 'basic') {
-      closePanelPopout();
-      document.querySelectorAll('.od-panel').forEach((panel) => panel.classList.toggle('is-open', panel.id === 'panel-basic'));
-    } else {
-      openPanelPopout(tab.dataset.tab, tab.textContent.trim());
-    }
+    openPanelPopout(tab.dataset.tab, tab.textContent.trim());
     return;
   }
   if (event.target.closest('.od-close')) {
