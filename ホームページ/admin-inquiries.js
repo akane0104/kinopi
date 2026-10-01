@@ -1339,6 +1339,12 @@ function returnPanelHome() {
 document.getElementById('panel-popout')?.addEventListener('close', returnPanelHome);
 document.getElementById('order-detail')?.addEventListener('close', closePanelPopout);
 
+document.getElementById('od-expand-toggle')?.addEventListener('click', (event) => {
+  const dialogEl = document.getElementById('order-detail');
+  const expanded = dialogEl.classList.toggle('is-expanded');
+  event.currentTarget.textContent = expanded ? '⇕ 元のサイズに戻す' : '⇕ 縦に広げる';
+});
+
 document.addEventListener('click', async (event) => {
   const filterChip = event.target.closest('.filter-chip');
   if (filterChip) {

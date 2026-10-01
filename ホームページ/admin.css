@@ -144,6 +144,7 @@
 .detail-button{border:0;cursor:pointer;padding:8px 14px;border-radius:99px;font:700 10px var(--round);color:#fff;background:var(--hot);box-shadow:0 3px 0 #cb3771}
 .detail-button span{font:400 13px var(--fun)}
 #order-detail{border:0;padding:0;background:transparent;width:min(1440px,97vw);height:auto;max-width:none;max-height:94vh;max-height:94dvh;overscroll-behavior:contain;resize:both;overflow:hidden;min-width:640px;min-height:260px}
+#order-detail.is-expanded{height:85vh;height:85dvh}
 #order-detail::backdrop{background:rgba(76,49,69,.45)}
 .od-box{display:flex;flex-direction:column;width:100%;height:100%;max-height:94vh;max-height:94dvh;overflow:hidden;border-radius:24px;background:#fffdfa;padding:26px 32px;box-shadow:0 14px 40px rgba(120,65,100,.3)}
 .od-panels{display:none}
@@ -893,14 +894,18 @@ article.inquiry-card.is-attention{background:#fffafc;box-shadow:0 0 0 2px #ffcfe
 .payment-method-badge.is-unselected{background:#f1eef2;color:#a89aa3}
 
 /* 右下のつまみでドラッグして、幅・高さを自由に調整できます（対応ブラウザのみ） */
-#order-detail::-webkit-resizer{background-color:transparent;background-image:radial-gradient(circle,var(--hot) 1.5px,transparent 1.5px);background-size:4px 4px;background-position:bottom right;padding:3px}
+#order-detail::-webkit-resizer{background-color:transparent}
+.od-box{position:relative}
+.od-box::after{content:'';position:absolute;right:7px;bottom:7px;width:18px;height:18px;pointer-events:none;background-image:repeating-linear-gradient(135deg,var(--hot) 0 2.5px,transparent 2.5px 6px);opacity:.6;border-radius:2px}
 
 /* ============================================================
    タブの中身を別画面（ポップアップ）で開く機能
    ============================================================ */
 #panel-popout{border:0;padding:0;background:transparent;width:min(1200px,96vw);height:92vh;height:92dvh;max-width:none;max-height:none;overscroll-behavior:contain;resize:both;overflow:hidden;min-width:480px;min-height:320px}
 #panel-popout::backdrop{background:rgba(76,49,69,.45)}
-#panel-popout::-webkit-resizer{background-color:transparent;background-image:radial-gradient(circle,var(--hot) 1.5px,transparent 1.5px);background-size:4px 4px;background-position:bottom right;padding:3px}
+#panel-popout::-webkit-resizer{background-color:transparent}
+.od-popout-box{position:relative}
+.od-popout-box::after{content:'';position:absolute;right:7px;bottom:7px;width:18px;height:18px;pointer-events:none;background-image:repeating-linear-gradient(135deg,var(--hot) 0 2.5px,transparent 2.5px 6px);opacity:.6;border-radius:2px}
 .od-popout-box{width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;border-radius:24px;background:#fffdfa;padding:26px 32px;box-shadow:0 14px 40px rgba(120,65,100,.3)}
 .od-popout-mount{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;max-width:1000px;margin:0 auto;width:100%}
 .od-popout-title{margin:0 0 14px;padding-right:40px;font-size:20px;letter-spacing:-.02em;color:var(--ink)}
@@ -910,3 +915,6 @@ article.inquiry-card.is-attention{background:#fffafc;box-shadow:0 0 0 2px #ffcfe
   #panel-popout{width:98vw;height:94vh;height:94dvh}
   .od-popout-box{padding:18px 16px}
 }
+
+.od-expand-button{border:2px solid #f2d5e0;background:#fff;color:var(--hot);cursor:pointer;padding:7px 14px;border-radius:99px;font:700 11px var(--round);white-space:nowrap}
+.od-expand-button:hover{background:#fff1f6}
